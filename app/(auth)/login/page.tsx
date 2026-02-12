@@ -16,31 +16,60 @@ import {
   EyeOff,
 } from "lucide-react";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
 const ROLES = [
   { key: "student", label: "Student", icon: User },
   { key: "teacher", label: "Teacher", icon: BookOpen },
   { key: "parent", label: "Parent", icon: Users },
   { key: "admin", label: "Admin", icon: Shield },
-];
+] as const;
+
+// Zod schema for login form
+const loginSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  role: z.enum(["student", "teacher", "parent", "admin"]).refine((val) => val !== null, {
+    message: "Role is required",
+  }),
+});
+
+type LoginFormInputs = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: { preventDefault: () => void; }) => {
-    e.preventDefault();
-    // TODO: logic here
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<LoginFormInputs>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = (data: LoginFormInputs) => {
+    console.log("Login data:", data);
+    // TODO: Add actual login logic here (API call, dashboard redirect, etc.)
   };
+
+  // Update hidden role field whenever selectedRole changes
+  const handleRoleSelect = (role: "student" | "teacher" | "parent" | "admin") => {
+    setSelectedRole(role);
+    setValue("role", role); 
+  };
+
 
   return (
     <div className="flex min-h-screen overflow-hidden">
       {/* ── Left branding panel ── */}
       <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-blue-500 to-teal-500 p-12 flex-col justify-between relative overflow-hidden">
-        {/* decorative blobs */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-        {/* Logo */}
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-blue-600">
@@ -53,7 +82,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Hero image + floating cards */}
         <div className="relative z-10 flex-1 flex items-center justify-center">
           <div className="relative w-full max-w-lg">
             <Image
@@ -65,7 +93,6 @@ export default function LoginPage() {
               priority
             />
 
-            {/* Performance card */}
             <div className="absolute -top-6 -right-6 bg-white p-4 rounded-xl shadow-lg max-w-45 animate-bounce [animation-duration:3s]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
@@ -78,7 +105,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Active users card */}
             <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-lg max-w-45 animate-bounce [animation-duration:4s]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
@@ -105,7 +131,6 @@ export default function LoginPage() {
             <span className="font-bold text-2xl text-gray-900 tracking-tight">EduTrack</span>
           </div>
 
-          {/* Card */}
           <div className="bg-white rounded-2xl shadow-lg p-8 sm:p-10">
             <div className="mb-8">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
@@ -122,7 +147,7 @@ export default function LoginPage() {
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setSelectedRole(key)}
+                    onClick={() => handleRoleSelect(key)}
                     className={`flex items-center justify-center gap-2 p-3 border-2 rounded-lg font-medium transition-all
                       ${selectedRole === key
                         ? "border-blue-500 bg-blue-50 text-blue-600"
@@ -134,10 +159,13 @@ export default function LoginPage() {
                   </button>
                 ))}
               </div>
+              {errors.role && <p className="text-red-500 text-sm mt-1">{errors.role.message}</p>}
             </div>
 
             {/* Form */}
-            <form className="space-y-5" onSubmit={handleSubmit}>
+            <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+              <input type="hidden" {...register("role")} />
+
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -146,12 +174,13 @@ export default function LoginPage() {
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                   <input
+                    {...register("email")}
                     type="email"
-                    required
                     placeholder="you@example.com"
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
                 </div>
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
               </div>
 
               {/* Password */}
@@ -159,26 +188,21 @@ export default function LoginPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-
                   <input
+                    {...register("password")}
                     type={showPassword ? "text" : "password"}
-                    required
                     placeholder="••••••••"
                     className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
-
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
               </div>
 
               {/* Remember & forgot */}
@@ -218,10 +242,7 @@ export default function LoginPage() {
             <div className="text-center">
               <p className="text-sm text-gray-600">
                 Don&apos;t have an account?{" "}
-                <button
-                  type="button"
-                  className="text-blue-600 hover:text-blue-700 font-medium"
-                >
+                <button type="button" className="text-blue-600 hover:text-blue-700 font-medium">
                   Contact your administrator
                 </button>
               </p>
