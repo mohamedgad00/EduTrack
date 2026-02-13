@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   GraduationCap,
@@ -20,6 +20,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/redux/store";
+import { loginUser } from "@/redux/features/auth/authSlice";
+import { useRouter } from "next/navigation";
+
 const ROLES = [
   { key: "student", label: "Student", icon: User },
   { key: "teacher", label: "Teacher", icon: BookOpen },
@@ -27,12 +32,12 @@ const ROLES = [
   { key: "admin", label: "Admin", icon: Shield },
 ] as const;
 
-// Zod schema for login form
+// Zod schema
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  role: z.enum(["student", "teacher", "parent", "admin"]).refine((val) => val !== null, {
-    message: "Role is required",
+  role: z.enum(["student", "teacher", "parent", "admin"], {
+    required_error: "Role is required",
   }),
 });
 
@@ -42,6 +47,13 @@ export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+
+  const { user, isLoading, error } = useSelector(
+    (state: RootState) => state.auth
+  );
+
   const {
     register,
     handleSubmit,
@@ -50,16 +62,30 @@ export default function LoginPage() {
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
   });
-
   const onSubmit = (data: LoginFormInputs) => {
-    console.log("Login data:", data);
-    // TODO: Add actual login logic here (API call, dashboard redirect, etc.)
+    dispatch(loginUser(data));
   };
+  useEffect(() => {
+    if (!user) return;
+    switch (user.role) {
+      case "admin":
+        router.push("/dashboard/admin");
+        break;
+      case "teacher":
+        router.push("/dashboard/teacher");
+        break;
+      case "student":
+        router.push("/dashboard/student");
+        break;
+      case "parent":
+        router.push("/dashboard/parent");
+        break;
+    }
+  }, [user, router]);
 
-  // Update hidden role field whenever selectedRole changes
   const handleRoleSelect = (role: "student" | "teacher" | "parent" | "admin") => {
     setSelectedRole(role);
-    setValue("role", role); 
+    setValue("role", role);
   };
 
 
@@ -222,12 +248,19 @@ export default function LoginPage() {
               {/* Submit */}
               <button
                 type="submit"
+                disabled={isLoading}
                 className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"
               >
-                Login
+                {isLoading ? "Logging in..." : "Login"}
                 <ArrowRight className="w-5 h-5" />
               </button>
             </form>
+
+             {error && (
+            <p className="text-red-500 text-center mt-3">
+              {error}
+            </p>
+          )}
 
             {/* Divider */}
             <div className="relative my-6">
