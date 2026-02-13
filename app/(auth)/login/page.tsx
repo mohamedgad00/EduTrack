@@ -256,11 +256,11 @@ export default function LoginPage() {
               </button>
             </form>
 
-             {error && (
-            <p className="text-red-500 text-center mt-3">
-              {error}
-            </p>
-          )}
+            {error && (
+              <p className="text-red-500 text-center mt-3">
+                {error}
+              </p>
+            )}
 
             {/* Divider */}
             <div className="relative my-6">
