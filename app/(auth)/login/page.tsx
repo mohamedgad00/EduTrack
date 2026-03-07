@@ -88,7 +88,6 @@ export default function LoginPage() {
     setValue("role", role);
   };
 
-
   return (
     <div className="flex min-h-screen overflow-hidden">
       {/* ── Left branding panel ── */}
