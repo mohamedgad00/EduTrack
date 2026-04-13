@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BookOpen,
   Briefcase,
-  Check,
   GraduationCap,
   Home,
   Key,
@@ -16,7 +14,11 @@ import {
   X,
 } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
+import { useDispatch, useSelector } from "react-redux";
 import { z } from "zod";
+import { AppDispatch, RootState } from "@/redux/store";
+import { clearCreateUserState, createUser } from "@/redux/features/users/usersSlice";
+import { showToast } from "@/utils/toastUtils";
 
 type Role = "student" | "teacher" | "parent";
 
@@ -48,49 +50,49 @@ const formSchema = z
   })
   .superRefine((data, context) => {
     if (!data.role) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["role"], message: "Please select a user type first" });
+      context.addIssue({ code: "custom", path: ["role"], message: "Please select a user type first" });
       return;
     }
 
     if (data.role === "student") {
       if (!data.grade) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["grade"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["grade"], message: "This field is required" });
       }
       if (!data.classSection) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["classSection"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["classSection"], message: "This field is required" });
       }
       if (!data.parentGuardian) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["parentGuardian"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["parentGuardian"], message: "This field is required" });
       }
       if (!data.enrollmentDate) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["enrollmentDate"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["enrollmentDate"], message: "This field is required" });
       }
     }
 
     if (data.role === "teacher") {
       if (!data.specialty) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["specialty"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["specialty"], message: "This field is required" });
       }
       if (!data.experience) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["experience"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["experience"], message: "This field is required" });
       }
       if (data.coursesAssigned.length === 0) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["coursesAssigned"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["coursesAssigned"], message: "This field is required" });
       }
       if (!data.hireDate) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["hireDate"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["hireDate"], message: "This field is required" });
       }
     }
 
     if (data.role === "parent") {
       if (data.linkedStudents.length === 0) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["linkedStudents"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["linkedStudents"], message: "This field is required" });
       }
       if (!data.emergencyContact) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["emergencyContact"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["emergencyContact"], message: "This field is required" });
       }
       if (!data.address) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["address"], message: "This field is required" });
+        context.addIssue({ code: "custom", path: ["address"], message: "This field is required" });
       }
     }
   });
@@ -161,7 +163,8 @@ interface AddUserModalProps {
 }
 
 export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
-  const [showToast, setShowToast] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const { isCreating } = useSelector((state: RootState) => state.users);
 
   const {
     register,
@@ -182,7 +185,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
 
   const closeModal = () => {
     reset(defaultValues);
-    setShowToast(false);
+    dispatch(clearCreateUserState());
     onClose();
   };
 
@@ -197,12 +200,56 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
     closeModal();
   };
 
-  const onSubmit = () => {
-    setShowToast(true);
-    window.setTimeout(() => {
-      setShowToast(false);
+  const onSubmit = async (data: FormValues) => {
+    if (!data.role) return;
+
+    const payload = {
+      role: data.role,
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      gender: data.gender,
+      dob: data.dob,
+      username: data.username,
+      password: data.password,
+      sendWelcomeEmail: data.sendWelcomeEmail ?? true,
+      ...(data.role === "student"
+        ? {
+          grade: data.grade,
+          classSection: data.classSection,
+          parentGuardian: data.parentGuardian,
+          enrollmentDate: data.enrollmentDate,
+        }
+        : {}),
+      ...(data.role === "teacher"
+        ? {
+          specialty: data.specialty,
+          experience: data.experience,
+          coursesAssigned: data.coursesAssigned,
+          hireDate: data.hireDate,
+        }
+        : {}),
+      ...(data.role === "parent"
+        ? {
+          linkedStudents: data.linkedStudents,
+          emergencyContact: data.emergencyContact,
+          address: data.address,
+        }
+        : {}),
+    };
+
+    dispatch(clearCreateUserState());
+    const action = await dispatch(createUser(payload));
+    if (createUser.fulfilled.match(action)) {
+      showToast("success", "User created successfully.");
       reset(defaultValues);
-    }, 2000);
+      return;
+    }
+
+    if (createUser.rejected.match(action)) {
+      const errorMessage = (action.payload as string) ?? "Failed to create user. Please try again.";
+      showToast("error", errorMessage);
+    }
   };
 
   const inputClass = (hasError: boolean) =>
@@ -624,10 +671,11 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center gap-2 rounded-(--radius-small) bg-blue-500 px-8 py-3 font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:bg-blue-600"
+                    disabled={isCreating}
+                    className="flex items-center gap-2 rounded-(--radius-small) bg-blue-500 px-8 py-3 font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     <UserPlus className="h-5 w-5" />
-                    Create User
+                    {isCreating ? "Creating..." : "Create User"}
                   </button>
                 </div>
               </div>
@@ -635,20 +683,6 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
           </form>
         </div>
       </main>
-
-      {showToast ? (
-        <div className="fixed right-5 top-5 z-50 animate-[slideIn_0.3s_ease-out]">
-          <div className="flex min-w-75 items-center gap-3 rounded-(--radius-large) bg-green-500 px-6 py-4 text-white shadow-(--shadow-custom-hover)">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
-              <Check className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="font-semibold">User Created Successfully!</p>
-              <p className="text-sm text-green-100">The user account has been created</p>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <style jsx global>{`
         :root {
@@ -660,17 +694,6 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
           --radius-large: 1rem;
           --shadow-custom: 0 10px 15px -3px rgba(30, 58, 138, 0.1), 0 4px 6px -2px rgba(30, 58, 138, 0.05);
           --shadow-custom-hover: 0 20px 25px -5px rgba(30, 58, 138, 0.15), 0 10px 10px -5px rgba(30, 58, 138, 0.04);
-        }
-
-        @keyframes slideIn {
-          from {
-            transform: translateX(400px);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
         }
       `}</style>
     </div>

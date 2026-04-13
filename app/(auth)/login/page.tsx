@@ -24,6 +24,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
 import { loginUser } from "@/redux/features/auth/authSlice";
 import { useRouter } from "next/navigation";
+import { showToast } from "@/utils/toastUtils";
 
 const ROLES = [
   { key: "student", label: "Student", icon: User },
@@ -37,7 +38,7 @@ const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   role: z.enum(["student", "teacher", "parent", "admin"], {
-    required_error: "Role is required",
+    message: "Role is required",
   }),
 });
 
@@ -62,8 +63,26 @@ export default function LoginPage() {
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
   });
-  const onSubmit = (data: LoginFormInputs) => {
-    dispatch(loginUser(data));
+
+  const onSubmit = async (data: LoginFormInputs) => {
+    try {
+      const action = await dispatch(
+        loginUser({ email: data.email, password: data.password })
+      );
+
+      if (loginUser.fulfilled.match(action)) {
+        showToast("success", "Login successful.");
+        return;
+      }
+
+      if (loginUser.rejected.match(action)) {
+        const errorMessage =
+          (action.payload as string) ?? "Login failed. Please try again.";
+        showToast("error", errorMessage);
+      }
+    } catch {
+      showToast("error", "Login failed. Please try again.");
+    }
   };
   useEffect(() => {
     if (!user) return;
