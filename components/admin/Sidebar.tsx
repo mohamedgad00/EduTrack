@@ -6,35 +6,37 @@ import {
   Settings, LogOut, LucideIcon, X,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-interface NavItem { label: string; icon: LucideIcon; active?: boolean; }
+interface NavItem { label: string; icon: LucideIcon; href: string; }
 interface NavGroup { section: string | null; items: NavItem[]; }
 
 const navItems: NavGroup[] = [
   {
     section: null,
-    items: [{ label: "Dashboard", icon: LayoutDashboard, active: true }],
+    items: [{ label: "Dashboard", icon: LayoutDashboard, href: "/admin" }],
   },
   {
     section: "Management",
     items: [
-      { label: "Users", icon: Users },
-      { label: "Courses", icon: BookOpen },
-      { label: "Enrollments", icon: ClipboardList },
+      { label: "Users", icon: Users, href: "/admin/users" },
+      { label: "Courses", icon: BookOpen, href: "#" },
+      { label: "Enrollments", icon: ClipboardList, href: "#" },
     ],
   },
   {
     section: "Academic",
     items: [
-      { label: "Quizzes", icon: FileQuestion },
-      { label: "Reports & Analytics", icon: BarChart2 },
+      { label: "Quizzes", icon: FileQuestion, href: "#" },
+      { label: "Reports & Analytics", icon: BarChart2, href: "#" },
     ],
   },
   {
     section: "System",
     items: [
-      { label: "Announcements", icon: Megaphone },
-      { label: "Settings", icon: Settings },
+      { label: "Announcements", icon: Megaphone, href: "#" },
+      { label: "Settings", icon: Settings, href: "#" },
     ],
   },
 ];
@@ -45,6 +47,20 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const pathname = usePathname();
+
+  const isItemActive = (href: string) => {
+    if (href === "#") {
+      return false;
+    }
+
+    if (href === "/admin") {
+      return pathname === "/admin";
+    }
+
+    return pathname.startsWith(href);
+  };
+
   return (
     <aside className={`
       w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 min-h-screen
@@ -81,23 +97,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             )}
             {group.items.map((item) => {
               const Icon = item.icon;
+              const active = isItemActive(item.href);
               return (
-                <a
+                <Link
                   key={item.label}
-                  href="#"
+                  href={item.href}
                   onClick={onClose}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors group mb-0.5
-                    ${item.active
+                    ${active
                       ? "bg-blue-50 text-blue-700"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                 >
                   <Icon
                     size={20}
-                    className={item.active ? "text-blue-700" : "text-gray-400 group-hover:text-gray-600"}
+                    className={active ? "text-blue-700" : "text-gray-400 group-hover:text-gray-600"}
                   />
                   {item.label}
-                </a>
+                </Link>
               );
             })}
           </div>
