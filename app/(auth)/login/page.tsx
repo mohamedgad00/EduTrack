@@ -25,6 +25,10 @@ import { AppDispatch, RootState } from "@/redux/store";
 import { loginUser } from "@/redux/features/auth/authSlice";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/utils/toastUtils";
+import Cookies from "js-cookie";
+
+const ADMIN_EMAIL = "admin@edutrack.com";
+const ADMIN_PASSWORD = "Admin@123456";
 
 const ROLES = [
   { key: "student", label: "Student", icon: User },
@@ -65,6 +69,25 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormInputs) => {
+    if (data.role === "admin") {
+      const isValidAdminCredentials =
+        data.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() &&
+        data.password === ADMIN_PASSWORD;
+
+      if (!isValidAdminCredentials) {
+        Cookies.remove("admin_auth");
+        showToast("error", "Invalid admin email or password.");
+        return;
+      }
+
+      Cookies.set("admin_auth", "true", { expires: 7 });
+      showToast("success", "Admin login successful.");
+      router.push("/admin");
+      return;
+    }
+
+    Cookies.remove("admin_auth");
+
     try {
       const action = await dispatch(
         loginUser({ email: data.email, password: data.password })
@@ -88,7 +111,7 @@ export default function LoginPage() {
     if (!user) return;
     switch (user.role) {
       case "admin":
-        router.push("/dashboard/admin");
+        router.push("/admin");
         break;
       case "teacher":
         router.push("/dashboard/teacher");
