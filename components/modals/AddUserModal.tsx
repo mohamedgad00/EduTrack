@@ -31,22 +31,19 @@ const formSchema = z
     email: z.string().min(1, "This field is required").email("Please enter a valid email"),
     phone: z.string().min(1, "This field is required"),
     gender: z.string().min(1, "Please select a gender"),
-    dob: z.string().min(1, "This field is required"),
-    profilePicture: z.any().optional(),
+    data_of_birth: z.string().min(1, "This field is required"),
+    // profilePicture: z.any().optional(),
     username: z.string().min(1, "This field is required"),
     password: z.string().min(1, "This field is required"),
     grade: z.string().optional(),
     classSection: z.string().optional(),
-    parentGuardian: z.string().optional(),
+    parent_id: z.string().optional(),
     enrollmentDate: z.string().optional(),
     specialty: z.string().optional(),
     experience: z.string().optional(),
-    coursesAssigned: z.array(z.string()).default([]),
+    course_id: z.string().min(1, "You must assign a course"),
     hireDate: z.string().optional(),
-    linkedStudents: z.array(z.string()).default([]),
-    emergencyContact: z.string().optional(),
     address: z.string().optional(),
-    sendWelcomeEmail: z.boolean().default(true),
   })
   .superRefine((data, context) => {
     if (!data.role) {
@@ -61,8 +58,8 @@ const formSchema = z
       if (!data.classSection) {
         context.addIssue({ code: "custom", path: ["classSection"], message: "This field is required" });
       }
-      if (!data.parentGuardian) {
-        context.addIssue({ code: "custom", path: ["parentGuardian"], message: "This field is required" });
+      if (!data.parent_id) {
+        context.addIssue({ code: "custom", path: ["parent_id"], message: "This field is required" });
       }
       if (!data.enrollmentDate) {
         context.addIssue({ code: "custom", path: ["enrollmentDate"], message: "This field is required" });
@@ -76,8 +73,8 @@ const formSchema = z
       if (!data.experience) {
         context.addIssue({ code: "custom", path: ["experience"], message: "This field is required" });
       }
-      if (data.coursesAssigned.length === 0) {
-        context.addIssue({ code: "custom", path: ["coursesAssigned"], message: "This field is required" });
+      if (!data.course_id) {
+        context.addIssue({ code: "custom", path: ["course_id"], message: "This field is required" });
       }
       if (!data.hireDate) {
         context.addIssue({ code: "custom", path: ["hireDate"], message: "This field is required" });
@@ -85,12 +82,6 @@ const formSchema = z
     }
 
     if (data.role === "parent") {
-      if (data.linkedStudents.length === 0) {
-        context.addIssue({ code: "custom", path: ["linkedStudents"], message: "This field is required" });
-      }
-      if (!data.emergencyContact) {
-        context.addIssue({ code: "custom", path: ["emergencyContact"], message: "This field is required" });
-      }
       if (!data.address) {
         context.addIssue({ code: "custom", path: ["address"], message: "This field is required" });
       }
@@ -105,22 +96,19 @@ const defaultValues = {
   email: "",
   phone: "",
   gender: "",
-  dob: "",
-  profilePicture: undefined,
+  data_of_birth: "",
+  // profilePicture: undefined,
   username: "",
   password: "",
   grade: "",
   classSection: "",
-  parentGuardian: "",
+  parent_id: "",
   enrollmentDate: "",
   specialty: "",
   experience: "",
-  coursesAssigned: [] as string[],
+  course_id: "",
   hireDate: "",
-  linkedStudents: [] as string[],
-  emergencyContact: "",
   address: "",
-  sendWelcomeEmail: true,
 } satisfies FormValues;
 
 const roleCards: Array<{
@@ -209,15 +197,14 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
       email: data.email,
       phone: data.phone,
       gender: data.gender,
-      dob: data.dob,
+      data_of_birth: data.data_of_birth,
       username: data.username,
       password: data.password,
-      sendWelcomeEmail: data.sendWelcomeEmail ?? true,
       ...(data.role === "student"
         ? {
           grade: data.grade,
           classSection: data.classSection,
-          parentGuardian: data.parentGuardian,
+          parent_id: data.parent_id,
           enrollmentDate: data.enrollmentDate,
         }
         : {}),
@@ -225,14 +212,12 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
         ? {
           specialty: data.specialty,
           experience: data.experience,
-          coursesAssigned: data.coursesAssigned,
+          course_id: data.course_id,
           hireDate: data.hireDate,
         }
         : {}),
       ...(data.role === "parent"
         ? {
-          linkedStudents: data.linkedStudents,
-          emergencyContact: data.emergencyContact,
           address: data.address,
         }
         : {}),
@@ -318,6 +303,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
               {errors.role?.message ? <p className="mt-3 text-sm text-red-500">{errors.role.message}</p> : null}
             </div>
 
+            {/* Basic Information Fields */}
             {visibleRoleFields ? (
               <div className="space-y-6">
                 <section className="rounded-(--radius-large) bg-white p-6 shadow-(--shadow-custom)">
@@ -379,7 +365,6 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                           <option value="">Select Gender</option>
                           <option value="male">Male</option>
                           <option value="female">Female</option>
-                          <option value="other">Other</option>
                         </select>
                         {errors.gender?.message ? <span className="mt-1 text-sm text-red-500">{errors.gender.message}</span> : null}
                       </div>
@@ -387,22 +372,14 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                         <label className="mb-2 block text-sm font-medium text-gray-700">
                           Date of Birth <span className="text-red-500">*</span>
                         </label>
-                        <input type="date" {...register("dob")} className={inputClass(Boolean(errors.dob))} />
-                        {errors.dob?.message ? <span className="mt-1 text-sm text-red-500">{errors.dob.message}</span> : null}
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-gray-700">Profile Picture</label>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          {...register("profilePicture")}
-                          className="w-full rounded-(--radius-small) border border-gray-300 px-4 py-3 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                        />
+                        <input type="date" {...register("data_of_birth")} className={inputClass(Boolean(errors.data_of_birth))} />
+                        {errors.data_of_birth?.message ? <span className="mt-1 text-sm text-red-500">{errors.data_of_birth.message}</span> : null}
                       </div>
                     </div>
                   </div>
                 </section>
 
+                {/* Student Details Fields */}
                 {visibleRoleFields === "student" ? (
                   <section className="rounded-(--radius-large) bg-white p-6 shadow-(--shadow-custom)">
                     <div className="mb-6 flex items-center gap-2">
@@ -454,16 +431,16 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                       <div className="space-y-4">
                         <div>
                           <label className="mb-2 block text-sm font-medium text-gray-700">
-                            Parent / Guardian <span className="text-red-500">*</span>
+                            Parent<span className="text-red-500">*</span>
                           </label>
-                          <select {...register("parentGuardian")} className={inputClass(Boolean(errors.parentGuardian))}>
+                          <select {...register("parent_id")} className={inputClass(Boolean(errors.parent_id))}>
                             <option value="">Select Parent</option>
                             <option value="1">John Smith (Father)</option>
                             <option value="2">Mary Johnson (Mother)</option>
                             <option value="3">Robert Williams (Guardian)</option>
                           </select>
-                          {errors.parentGuardian?.message ? (
-                            <span className="mt-1 text-sm text-red-500">{errors.parentGuardian.message}</span>
+                          {errors.parent_id?.message ? (
+                            <span className="mt-1 text-sm text-red-500">{errors.parent_id.message}</span>
                           ) : null}
                         </div>
                         <div>
@@ -480,6 +457,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                   </section>
                 ) : null}
 
+                {/* Teacher Details */}
                 {visibleRoleFields === "teacher" ? (
                   <section className="rounded-(--radius-large) bg-white p-6 shadow-(--shadow-custom)">
                     <div className="mb-6 flex items-center gap-2">
@@ -526,8 +504,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                             Courses Assigned <span className="text-red-500">*</span>
                           </label>
                           <select
-                            multiple
-                            {...register("coursesAssigned")}
+                            {...register("course_id")}
                             className="h-24 w-full rounded-(--radius-small) border border-gray-300 px-4 py-3 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                           >
                             <option value="1">Mathematics - Grade 10</option>
@@ -535,10 +512,10 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                             <option value="3">Calculus - Grade 12</option>
                             <option value="4">Geometry - Grade 11</option>
                           </select>
-                          {errors.coursesAssigned?.message ? (
-                            <span className="mt-1 text-sm text-red-500">{errors.coursesAssigned.message}</span>
+                          {errors.course_id?.message ? (
+                            <span className="mt-1 text-sm text-red-500">{errors.course_id.message}</span>
                           ) : null}
-                          <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple</p>
+                          {/* <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple</p> */}
                         </div>
                         <div>
                           <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -552,6 +529,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                   </section>
                 ) : null}
 
+                {/* Parent Details */}
                 {visibleRoleFields === "parent" ? (
                   <section className="rounded-(--radius-large) bg-white p-6 shadow-(--shadow-custom)">
                     <div className="mb-6 flex items-center gap-2">
@@ -563,39 +541,6 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
 
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                       <div className="space-y-4">
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-gray-700">
-                            Linked Students <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            multiple
-                            {...register("linkedStudents")}
-                            className="h-32 w-full rounded-(--radius-small) border border-gray-300 px-4 py-3 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="1">Emma Johnson - Grade 5A</option>
-                            <option value="2">Liam Johnson - Grade 3B</option>
-                            <option value="3">Olivia Smith - Grade 7C</option>
-                            <option value="4">Noah Williams - Grade 9A</option>
-                          </select>
-                          {errors.linkedStudents?.message ? (
-                            <span className="mt-1 text-sm text-red-500">{errors.linkedStudents.message}</span>
-                          ) : null}
-                          <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple children</p>
-                        </div>
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-gray-700">
-                            Emergency Contact Number <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="tel"
-                            {...register("emergencyContact")}
-                            className={inputClass(Boolean(errors.emergencyContact))}
-                            placeholder="+1 (555) 000-0000"
-                          />
-                          {errors.emergencyContact?.message ? (
-                            <span className="mt-1 text-sm text-red-500">{errors.emergencyContact.message}</span>
-                          ) : null}
-                        </div>
                       </div>
                       <div className="space-y-4">
                         <div>
@@ -615,6 +560,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                   </section>
                 ) : null}
 
+                {/* Account Settings */}
                 <section className="rounded-(--radius-large) bg-white p-6 shadow-(--shadow-custom)">
                   <div className="mb-6 flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100">
@@ -643,20 +589,6 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                       />
                       {errors.password?.message ? <span className="mt-1 text-sm text-red-500">{errors.password.message}</span> : null}
                     </div>
-                  </div>
-
-                  <div className="mt-6 rounded-(--radius-small) border border-blue-200 bg-blue-50 p-4">
-                    <label className="flex cursor-pointer items-start gap-3">
-                      <input
-                        type="checkbox"
-                        {...register("sendWelcomeEmail")}
-                        className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <div>
-                        <span className="text-sm font-medium text-gray-900">Send welcome email with login credentials</span>
-                        <p className="mt-1 text-xs text-gray-600">User will receive an email with their username and temporary password</p>
-                      </div>
-                    </label>
                   </div>
                 </section>
 

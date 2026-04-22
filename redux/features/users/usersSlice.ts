@@ -35,20 +35,17 @@ export interface CreateUserPayload {
   email: string;
   phone: string;
   gender: string;
-  dob: string;
+  data_of_birth: string;
   username: string;
   password: string;
-  sendWelcomeEmail: boolean;
   grade?: string;
   classSection?: string;
-  parentGuardian?: string;
+  parent_id?: string;
   enrollmentDate?: string;
   specialty?: string;
   experience?: string;
-  coursesAssigned?: string[];
+  course_id?: string;
   hireDate?: string;
-  linkedStudents?: string[];
-  emergencyContact?: string;
   address?: string;
 }
 
