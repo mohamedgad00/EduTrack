@@ -31,8 +31,7 @@ const formSchema = z
     email: z.string().min(1, "This field is required").email("Please enter a valid email"),
     phone: z.string().min(1, "This field is required"),
     gender: z.string().min(1, "Please select a gender"),
-    data_of_birth: z.string().min(1, "This field is required"),
-    // profilePicture: z.any().optional(),
+    date_of_birth: z.string().min(1, "This field is required"),
     username: z.string().min(1, "This field is required"),
     password: z.string().min(1, "This field is required"),
     grade: z.string().optional(),
@@ -96,7 +95,7 @@ const defaultValues = {
   email: "",
   phone: "",
   gender: "",
-  data_of_birth: "",
+  date_of_birth: "",
   username: "",
   password: "",
   grade: "",
@@ -196,7 +195,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
       email: data.email,
       phone: data.phone,
       gender: data.gender,
-      data_of_birth: data.data_of_birth,
+      date_of_birth: data.date_of_birth,
       username: data.username,
       password: data.password,
       ...(data.role === "student"
@@ -371,8 +370,8 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                         <label className="mb-2 block text-sm font-medium text-gray-700">
                           Date of Birth <span className="text-red-500">*</span>
                         </label>
-                        <input type="date" {...register("data_of_birth")} className={inputClass(Boolean(errors.data_of_birth))} />
-                        {errors.data_of_birth?.message ? <span className="mt-1 text-sm text-red-500">{errors.data_of_birth.message}</span> : null}
+                        <input type="date" {...register("date_of_birth")} className={inputClass(Boolean(errors.date_of_birth))} />
+                        {errors.date_of_birth?.message ? <span className="mt-1 text-sm text-red-500">{errors.date_of_birth.message}</span> : null}
                       </div>
                     </div>
                   </div>
