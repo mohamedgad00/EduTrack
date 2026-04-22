@@ -97,7 +97,6 @@ const defaultValues = {
   phone: "",
   gender: "",
   data_of_birth: "",
-  // profilePicture: undefined,
   username: "",
   password: "",
   grade: "",
@@ -505,8 +504,9 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                           </label>
                           <select
                             {...register("course_id")}
-                            className="h-24 w-full rounded-(--radius-small) border border-gray-300 px-4 py-3 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                            className={inputClass(Boolean(errors.course_id))}
                           >
+                            <option value="">Select Course</option>
                             <option value="1">Mathematics - Grade 10</option>
                             <option value="2">Algebra - Grade 9</option>
                             <option value="3">Calculus - Grade 12</option>
@@ -515,7 +515,6 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                           {errors.course_id?.message ? (
                             <span className="mt-1 text-sm text-red-500">{errors.course_id.message}</span>
                           ) : null}
-                          {/* <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple</p> */}
                         </div>
                         <div>
                           <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -539,22 +538,18 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                       <h3 className="font-heading text-lg font-semibold text-gray-900">Parent Details</h3>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                      <div className="space-y-4">
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-gray-700">
-                            Address <span className="text-red-500">*</span>
-                          </label>
-                          <textarea
-                            rows={4}
-                            {...register("address")}
-                            className={`${inputClass(Boolean(errors.address))} resize-none`}
-                            placeholder="Enter full address"
-                          />
-                          {errors.address?.message ? <span className="mt-1 text-sm text-red-500">{errors.address.message}</span> : null}
-                        </div>
+                    <div className="space-y-4">
+                      <div className="max-w-3xl">
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                          Address <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                          rows={5}
+                          {...register("address")}
+                          className={`${inputClass(Boolean(errors.address))} min-h-32 resize-none leading-relaxed`}
+                          placeholder="Enter full address, including city and postal code"
+                        />
+                        {errors.address?.message ? <span className="mt-1 text-sm text-red-500">{errors.address.message}</span> : null}
                       </div>
                     </div>
                   </section>
