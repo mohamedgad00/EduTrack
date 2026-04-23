@@ -38,7 +38,7 @@ export interface CreateUserPayload {
   date_of_birth: string;
   username: string;
   password: string;
-  grade?: string;
+  level?: string;
   classSection?: string;
   parent_id?: string;
   enrollmentDate?: string;

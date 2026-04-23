@@ -34,7 +34,7 @@ const formSchema = z
     date_of_birth: z.string().min(1, "This field is required"),
     username: z.string().min(1, "This field is required"),
     password: z.string().min(1, "This field is required"),
-    grade: z.string().optional(),
+    level: z.string().optional(),
     classSection: z.string().optional(),
     parent_id: z.string().optional(),
     enrollmentDate: z.string().optional(),
@@ -51,8 +51,8 @@ const formSchema = z
     }
 
     if (data.role === "student") {
-      if (!data.grade) {
-        context.addIssue({ code: "custom", path: ["grade"], message: "This field is required" });
+      if (!data.level) {
+        context.addIssue({ code: "custom", path: ["level"], message: "This field is required" });
       }
       if (!data.classSection) {
         context.addIssue({ code: "custom", path: ["classSection"], message: "This field is required" });
@@ -98,7 +98,7 @@ const defaultValues = {
   date_of_birth: "",
   username: "",
   password: "",
-  grade: "",
+  level: "",
   classSection: "",
   parent_id: "",
   enrollmentDate: "",
@@ -200,7 +200,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
       password: data.password,
       ...(data.role === "student"
         ? {
-          grade: data.grade,
+          level: data.level,
           classSection: data.classSection,
           parent_id: data.parent_id,
           enrollmentDate: data.enrollmentDate,
@@ -391,24 +391,24 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                       <div className="space-y-4">
                         <div>
                           <label className="mb-2 block text-sm font-medium text-gray-700">
-                            Grade / Level <span className="text-red-500">*</span>
+                            Level <span className="text-red-500">*</span>
                           </label>
-                          <select {...register("grade")} className={inputClass(Boolean(errors.grade))}>
-                            <option value="">Select Grade</option>
-                            <option value="1">Grade 1</option>
-                            <option value="2">Grade 2</option>
-                            <option value="3">Grade 3</option>
-                            <option value="4">Grade 4</option>
-                            <option value="5">Grade 5</option>
-                            <option value="6">Grade 6</option>
-                            <option value="7">Grade 7</option>
-                            <option value="8">Grade 8</option>
-                            <option value="9">Grade 9</option>
-                            <option value="10">Grade 10</option>
-                            <option value="11">Grade 11</option>
-                            <option value="12">Grade 12</option>
+                          <select {...register("level")} className={inputClass(Boolean(errors.level ))}>
+                            <option value="">Select Level</option>
+                            <option value="1">Level 1</option>
+                            <option value="2">Level 2</option>
+                            <option value="3">Level 3</option>
+                            <option value="4">Level 4</option>
+                            <option value="5">Level 5</option>
+                            <option value="6">Level 6</option>
+                            <option value="7">Level 7</option>
+                            <option value="8">Level 8</option>
+                            <option value="9">Level 9</option>
+                            <option value="10">Level 10</option>
+                            <option value="11">Level 11</option>
+                            <option value="12">Level 12</option>
                           </select>
-                          {errors.grade?.message ? <span className="mt-1 text-sm text-red-500">{errors.grade.message}</span> : null}
+                          {errors.level?.message ? <span className="mt-1 text-sm text-red-500">{errors.level.message}</span> : null}
                         </div>
                         <div>
                           <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -429,7 +429,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                       <div className="space-y-4">
                         <div>
                           <label className="mb-2 block text-sm font-medium text-gray-700">
-                            Parent<span className="text-red-500">*</span>
+                            Parent <span className="text-red-500">*</span>
                           </label>
                           <select {...register("parent_id")} className={inputClass(Boolean(errors.parent_id))}>
                             <option value="">Select Parent</option>
