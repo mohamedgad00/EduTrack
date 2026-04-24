@@ -21,7 +21,7 @@ const navItems: NavGroup[] = [
     section: "Management",
     items: [
       { label: "Users", icon: Users, href: "/admin/users" },
-      { label: "Courses", icon: BookOpen, href: "#" },
+      { label: "Courses", icon: BookOpen, href: "/admin/courses" },
       { label: "Enrollments", icon: ClipboardList, href: "#" },
     ],
   },
