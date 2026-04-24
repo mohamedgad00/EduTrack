@@ -7,7 +7,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface NavItem { label: string; icon: LucideIcon; href: string; }
 interface NavGroup { section: string | null; items: NavItem[]; }
@@ -48,6 +49,13 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    Cookies.remove("admin_auth", { path: "/" });
+    Cookies.remove("token", { path: "/" });
+    router.push("/login");
+  };
 
   const isItemActive = (href: string) => {
     if (href === "#") {
@@ -136,7 +144,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="text-xs text-gray-500 truncate">Administrator</p>
           </div>
         </div>
-        <button className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors cursor-pointer border-0">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors cursor-pointer border-0"
+        >
           <LogOut size={16} />
           Logout
         </button>

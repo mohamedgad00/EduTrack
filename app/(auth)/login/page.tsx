@@ -51,6 +51,7 @@ type LoginFormInputs = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -80,13 +81,18 @@ export default function LoginPage() {
         return;
       }
 
-      Cookies.set("admin_auth", "true", { expires: 7 });
+      const adminCookieOptions = {
+        path: "/",
+        ...(rememberMe ? { expires: 7 } : {}),
+      };
+
+      Cookies.set("admin_auth", "true", adminCookieOptions);
       showToast("success", "Admin login successful.");
       router.push("/admin");
       return;
     }
 
-    Cookies.remove("admin_auth");
+    Cookies.remove("admin_auth", { path: "/" });
 
     try {
       const action = await dispatch(
@@ -277,6 +283,8 @@ export default function LoginPage() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
+                    checked={rememberMe}
+                    onChange={(event) => setRememberMe(event.target.checked)}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-600">Remember me</span>
