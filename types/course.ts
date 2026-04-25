@@ -1,5 +1,22 @@
-export type AssignmentType = "Quizzes" | "Midterm" | "Final" | "Homework";
 export type AttendanceStatus = "present" | "absent";
+
+export type AssessmentType = "quiz" | "homework" | "midterm" | "final";
+
+export interface StudentAssessmentRecord {
+  studentId: string;
+  studentName: string;
+  grade?: number;
+  isPresent: boolean;
+}
+
+export interface CourseAssessment {
+  id: string;
+  type: AssessmentType;
+  name: string;
+  date: string;
+  maxGrade: number;
+  studentRecords: StudentAssessmentRecord[];
+}
 
 export interface StudentGrade {
   studentId: string;
@@ -30,11 +47,12 @@ export interface Course {
   teacherName: string;
   studentIds: string[];
   students: { id: string; name: string }[];
-  quizCount: number;
-  homeworkCount: number;
   createdAt: string;
   updatedAt: string;
-  grades: StudentGrade[];
+  quizzes: CourseAssessment[];
+  homeworks: CourseAssessment[];
+  midtermExam: CourseAssessment | null;
+  finalExam: CourseAssessment | null;
   attendance: StudentAttendance[];
 }
 
@@ -45,6 +63,4 @@ export interface CreateCoursePayload {
   description: string;
   teacherId: string;
   studentIds: string[];
-  quizCount: number;
-  homeworkCount: number;
 }

@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/redux/store";
-import { selectCourse, deleteCourseSuccess } from "@/redux/features/courses/coursesSlice";
-import { Course, StudentGrade, StudentAttendance } from "@/types/course";
+import { updateCourseSuccess, deleteCourseSuccess } from "@/redux/features/courses/coursesSlice";
+import { Course, StudentAttendance } from "@/types/course";
 import AddCourseModal from "@/components/modals/AddCourseModal";
 import GradeModal from "@/components/modals/GradeModal";
 import AttendanceModal from "@/components/modals/AttendanceModal";
@@ -71,20 +71,23 @@ export default function CoursesPage() {
     setIsAttendanceModalOpen(true);
   };
 
-  const handleSaveGrades = (grades: StudentGrade[]) => {
-    if (selectedCourse) {
-      const updatedCourse = { ...selectedCourse, grades };
-      dispatch(selectCourse(updatedCourse));
-      showToast("success", "Grades saved successfully");
-    }
+  const handleSaveGrades = (updatedCourse: Course) => {
+    dispatch(updateCourseSuccess(updatedCourse));
+    setSelectedCourse(updatedCourse);
+    showToast("success", "Assessments saved successfully");
   };
 
   const handleSaveAttendance = (attendance: StudentAttendance[]) => {
     if (selectedCourse) {
       const updatedCourse = { ...selectedCourse, attendance };
-      dispatch(selectCourse(updatedCourse));
+      dispatch(updateCourseSuccess(updatedCourse));
+      setSelectedCourse(updatedCourse);
       showToast("success", "Attendance saved successfully");
     }
+  };
+
+  const getAssessmentCount = (course: Course) => {
+    return (course.quizzes || []).length + (course.homeworks || []).length + (course.midtermExam ? 1 : 0) + (course.finalExam ? 1 : 0);
   };
 
   return (
@@ -148,10 +151,10 @@ export default function CoursesPage() {
                   <div className="bg-green-50 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-1">
                       <BarChart3 size={16} className="text-green-600" />
-                      <p className="text-xs text-gray-600 font-medium">Grades</p>
+                      <p className="text-xs text-gray-600 font-medium">Assessments</p>
                     </div>
                     <p className="text-2xl font-bold text-green-600">
-                      {course.grades.length > 0 ? course.grades.length : "0"}
+                      {getAssessmentCount(course)}
                     </p>
                   </div>
                 </div>
@@ -164,7 +167,7 @@ export default function CoursesPage() {
                       className="flex items-center justify-center gap-2 px-3 py-2 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors font-medium text-sm border border-amber-200"
                     >
                       <BarChart3 size={16} />
-                      Grades
+                      Assessments
                     </button>
                     <button
                       onClick={() => handleViewAttendance(course)}
@@ -188,14 +191,14 @@ export default function CoursesPage() {
                     >
                       <Trash2 size={16} />
                       Delete
-                      <button
-                        onClick={() => router.push(`/admin/courses/${course.id}`)}
-                        className="w-full px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium text-sm border border-green-200"
-                      >
-                        View Reports
-                      </button>
                     </button>
                   </div>
+                  <button
+                    onClick={() => router.push(`/admin/courses/${course.id}`)}
+                    className="w-full px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium text-sm border border-green-200"
+                  >
+                    View Reports
+                  </button>
                 </div>
               </div>
             </div>
@@ -237,7 +240,7 @@ export default function CoursesPage() {
           setSelectedCourse(null);
         }}
         course={selectedCourse}
-        onSaveGrades={handleSaveGrades}
+        onSaveCourse={handleSaveGrades}
       />
 
       <AttendanceModal

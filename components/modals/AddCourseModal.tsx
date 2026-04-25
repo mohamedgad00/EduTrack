@@ -18,8 +18,6 @@ const formSchema = z.object({
   description: z.string().min(1, "Description is required"),
   teacherId: z.string().min(1, "Please select a teacher"),
   studentIds: z.array(z.string()).min(1, "Please select at least one student"),
-  quizCount: z.number().int().min(1, "At least 1 quiz is required"),
-  homeworkCount: z.number().int().min(1, "At least 1 homework is required"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -59,8 +57,6 @@ export default function AddCourseModal({
       description: "",
       teacherId: "",
       studentIds: [],
-      quizCount: 1,
-      homeworkCount: 1,
     },
   });
 
@@ -78,8 +74,6 @@ export default function AddCourseModal({
       setValue("description", courseToEdit.description);
       setValue("teacherId", courseToEdit.teacherId);
       setValue("studentIds", courseToEdit.studentIds);
-      setValue("quizCount", courseToEdit.quizCount || 1);
-      setValue("homeworkCount", courseToEdit.homeworkCount || 1);
     }
   }, [courseToEdit, setValue]);
 
@@ -96,6 +90,29 @@ export default function AddCourseModal({
     setValue("studentIds", newStudents);
   };
 
+  const toAssignedStudents = (studentIds: string[]) => {
+    return studentIds.map((id) => {
+      const student = students.find((s) => s.id === id);
+      return { id, name: student?.name || "" };
+    });
+  };
+
+  const syncAssessmentStudents = (
+    studentIds: string[],
+    studentRecords: Array<{ studentId: string; studentName: string; grade?: number; isPresent: boolean }>
+  ) => {
+    return studentIds.map((id) => {
+      const existing = studentRecords.find((record) => record.studentId === id);
+      const student = students.find((s) => s.id === id);
+      return {
+        studentId: id,
+        studentName: student?.name || "",
+        grade: existing?.grade,
+        isPresent: existing?.isPresent ?? true,
+      };
+    });
+  };
+
   const onSubmit = async (data: FormValues) => {
     try {
       if (courseToEdit) {
@@ -104,8 +121,27 @@ export default function AddCourseModal({
           ...courseToEdit,
           ...data,
           studentIds: data.studentIds,
-          quizCount: data.quizCount,
-          homeworkCount: data.homeworkCount,
+          students: toAssignedStudents(data.studentIds),
+          quizzes: courseToEdit.quizzes.map((quiz) => ({
+            ...quiz,
+            studentRecords: syncAssessmentStudents(data.studentIds, quiz.studentRecords),
+          })),
+          homeworks: courseToEdit.homeworks.map((hw) => ({
+            ...hw,
+            studentRecords: syncAssessmentStudents(data.studentIds, hw.studentRecords),
+          })),
+          midtermExam: courseToEdit.midtermExam
+            ? {
+              ...courseToEdit.midtermExam,
+              studentRecords: syncAssessmentStudents(data.studentIds, courseToEdit.midtermExam.studentRecords),
+            }
+            : null,
+          finalExam: courseToEdit.finalExam
+            ? {
+              ...courseToEdit.finalExam,
+              studentRecords: syncAssessmentStudents(data.studentIds, courseToEdit.finalExam.studentRecords),
+            }
+            : null,
           updatedAt: new Date().toISOString(),
         }));
         showToast("success", "Course updated successfully!");
@@ -115,16 +151,14 @@ export default function AddCourseModal({
           id: crypto.randomUUID(),
           ...data,
           studentIds: data.studentIds,
-          students: data.studentIds.map((id) => {
-            const student = students.find((s) => s.id === id);
-            return { id, name: student?.name || "" };
-          }),
+          students: toAssignedStudents(data.studentIds),
           teacherName: teachers.find((t) => t.id === data.teacherId)?.name || "",
-          quizCount: data.quizCount,
-          homeworkCount: data.homeworkCount,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          grades: [],
+          quizzes: [],
+          homeworks: [],
+          midtermExam: null,
+          finalExam: null,
           attendance: [],
         };
         dispatch(createCourseSuccess(newCourse));
@@ -225,38 +259,6 @@ export default function AddCourseModal({
             {errors.description && (
               <p className="mt-1 text-sm text-red-500">{errors.description.message}</p>
             )}
-          </div>
-
-          {/* Assessments Count */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Number of Quizzes *
-              </label>
-              <input
-                {...register("quizCount", { valueAsNumber: true })}
-                type="number"
-                min={1}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              {errors.quizCount && (
-                <p className="mt-1 text-sm text-red-500">{errors.quizCount.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Number of Homework *
-              </label>
-              <input
-                {...register("homeworkCount", { valueAsNumber: true })}
-                type="number"
-                min={1}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              {errors.homeworkCount && (
-                <p className="mt-1 text-sm text-red-500">{errors.homeworkCount.message}</p>
-              )}
-            </div>
           </div>
 
           {/* Teacher Selection */}
