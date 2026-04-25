@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import MainProvider from "@/components/providers";
 
-const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "700"] });
+const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
 
 export const metadata: Metadata = {
   title: "EduTrack",
