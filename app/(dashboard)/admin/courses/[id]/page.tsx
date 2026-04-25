@@ -106,6 +106,7 @@ export default function CourseDetailsPage() {
         Back to Courses
       </button>
 
+      {/* Course Information */}
       <div className="bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-lg p-8 mb-8 shadow-lg">
         <h1 className="text-3xl font-bold mb-2">{course.name}</h1>
         <p className="text-blue-100 mb-4">{course.description}</p>
@@ -129,6 +130,7 @@ export default function CourseDetailsPage() {
         </div>
       </div>
 
+      {/* Assessment Stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {assessmentStats && (
           <>
@@ -173,6 +175,7 @@ export default function CourseDetailsPage() {
         )}
       </div>
 
+      {/* Student Assessment Summary */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-8 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h2 className="text-lg font-semibold text-gray-900">Student Assessment Summary</h2>
@@ -211,6 +214,7 @@ export default function CourseDetailsPage() {
         </div>
       </div>
 
+      {/* Quizzes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
@@ -231,6 +235,7 @@ export default function CourseDetailsPage() {
           </div>
         </div>
 
+        {/* Homework */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-semibold text-gray-900">Homework</h2>
@@ -251,6 +256,7 @@ export default function CourseDetailsPage() {
         </div>
       </div>
 
+      {/* Attendance Report "Not displayed now" */}
       {course.attendance.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
