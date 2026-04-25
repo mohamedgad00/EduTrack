@@ -55,6 +55,8 @@ export default function CourseDetailsPage() {
 
   const stats = calculateStats();
   const attendanceStats = calculateAttendanceStats();
+  const quizCount = Math.max(1, course.quizCount || 1);
+  const homeworkCount = Math.max(1, course.homeworkCount || 1);
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
@@ -153,18 +155,28 @@ export default function CourseDetailsPage() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">
                     Student Name
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">
-                    Quizzes
-                  </th>
+                  {Array.from({ length: quizCount }, (_, idx) => (
+                    <th
+                      key={`quiz-header-${idx}`}
+                      className="px-6 py-3 text-center text-xs font-semibold text-gray-700"
+                    >
+                      {`Quiz ${idx + 1}`}
+                    </th>
+                  ))}
                   <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">
                     Midterm
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">
                     Final
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">
-                    Homework
-                  </th>
+                  {Array.from({ length: homeworkCount }, (_, idx) => (
+                    <th
+                      key={`homework-header-${idx}`}
+                      className="px-6 py-3 text-center text-xs font-semibold text-gray-700"
+                    >
+                      {`Homework ${idx + 1}`}
+                    </th>
+                  ))}
                   <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">
                     Average
                   </th>
@@ -179,20 +191,24 @@ export default function CourseDetailsPage() {
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       {grade.studentName}
                     </td>
-                    <td className="px-6 py-4 text-sm text-center text-gray-600">
-                      {grade.quizzes ?? "-"}
-                    </td>
+                    {Array.from({ length: quizCount }, (_, idx) => (
+                      <td key={`quiz-score-${idx}`} className="px-6 py-4 text-sm text-center text-gray-600">
+                        {grade.quizzes?.[idx] ?? "-"}
+                      </td>
+                    ))}
                     <td className="px-6 py-4 text-sm text-center text-gray-600">
                       {grade.midterm ?? "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-center text-gray-600">
                       {grade.final ?? "-"}
                     </td>
-                    <td className="px-6 py-4 text-sm text-center text-gray-600">
-                      {grade.homework ?? "-"}
-                    </td>
+                    {Array.from({ length: homeworkCount }, (_, idx) => (
+                      <td key={`homework-score-${idx}`} className="px-6 py-4 text-sm text-center text-gray-600">
+                        {grade.homework?.[idx] ?? "-"}
+                      </td>
+                    ))}
                     <td className="px-6 py-4 text-sm text-center font-semibold text-blue-600">
-                      {grade.averageGrade ? grade.averageGrade.toFixed(2) : "-"}
+                      {grade.averageGrade !== undefined ? grade.averageGrade.toFixed(2) : "-"}
                     </td>
                   </tr>
                 ))}

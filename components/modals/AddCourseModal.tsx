@@ -1,7 +1,7 @@
 "use client";
 
 import { X, Plus, Trash2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,6 +18,8 @@ const formSchema = z.object({
   description: z.string().min(1, "Description is required"),
   teacherId: z.string().min(1, "Please select a teacher"),
   studentIds: z.array(z.string()).min(1, "Please select at least one student"),
+  quizCount: z.number().int().min(1, "At least 1 quiz is required"),
+  homeworkCount: z.number().int().min(1, "At least 1 homework is required"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -39,9 +41,7 @@ export default function AddCourseModal({
 }: AddCourseModalProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { loading } = useSelector((state: RootState) => state.courses);
-  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState<string>("");
 
   const {
     register,
@@ -49,6 +49,7 @@ export default function AddCourseModal({
     formState: { errors },
     reset,
     setValue,
+    control,
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -58,7 +59,15 @@ export default function AddCourseModal({
       description: "",
       teacherId: "",
       studentIds: [],
+      quizCount: 1,
+      homeworkCount: 1,
     },
+  });
+
+  const selectedStudents = useWatch({
+    control,
+    name: "studentIds",
+    defaultValue: [],
   });
 
   useEffect(() => {
@@ -68,16 +77,15 @@ export default function AddCourseModal({
       setValue("class", courseToEdit.class);
       setValue("description", courseToEdit.description);
       setValue("teacherId", courseToEdit.teacherId);
-      setSelectedTeacher(courseToEdit.teacherId);
-      setSelectedStudents(courseToEdit.studentIds);
       setValue("studentIds", courseToEdit.studentIds);
+      setValue("quizCount", courseToEdit.quizCount || 1);
+      setValue("homeworkCount", courseToEdit.homeworkCount || 1);
     }
   }, [courseToEdit, setValue]);
 
   const handleAddStudent = (studentId: string) => {
     if (!selectedStudents.includes(studentId)) {
       const newStudents = [...selectedStudents, studentId];
-      setSelectedStudents(newStudents);
       setValue("studentIds", newStudents);
     }
     setShowStudentDropdown(false);
@@ -85,7 +93,6 @@ export default function AddCourseModal({
 
   const handleRemoveStudent = (studentId: string) => {
     const newStudents = selectedStudents.filter((id) => id !== studentId);
-    setSelectedStudents(newStudents);
     setValue("studentIds", newStudents);
   };
 
@@ -96,21 +103,25 @@ export default function AddCourseModal({
         dispatch(updateCourseSuccess({
           ...courseToEdit,
           ...data,
-          studentIds: selectedStudents,
+          studentIds: data.studentIds,
+          quizCount: data.quizCount,
+          homeworkCount: data.homeworkCount,
           updatedAt: new Date().toISOString(),
         }));
         showToast("success", "Course updated successfully!");
       } else {
         // Create new course
         const newCourse: Course = {
-          id: Date.now().toString(),
+          id: crypto.randomUUID(),
           ...data,
-          studentIds: selectedStudents,
-          students: selectedStudents.map((id) => {
+          studentIds: data.studentIds,
+          students: data.studentIds.map((id) => {
             const student = students.find((s) => s.id === id);
             return { id, name: student?.name || "" };
           }),
           teacherName: teachers.find((t) => t.id === data.teacherId)?.name || "",
+          quizCount: data.quizCount,
+          homeworkCount: data.homeworkCount,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           grades: [],
@@ -121,15 +132,13 @@ export default function AddCourseModal({
       }
       handleClose();
     } catch (error) {
-      log("Error saving course:", error);
+      console.error("Error saving course:", error);
       showToast("error", "Failed to save course");
     }
   };
 
   const handleClose = () => {
     reset();
-    setSelectedStudents([]);
-    setSelectedTeacher("");
     dispatch(clearCourseState());
     onClose();
   };
@@ -218,6 +227,38 @@ export default function AddCourseModal({
             )}
           </div>
 
+          {/* Assessments Count */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Quizzes *
+              </label>
+              <input
+                {...register("quizCount", { valueAsNumber: true })}
+                type="number"
+                min={1}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              {errors.quizCount && (
+                <p className="mt-1 text-sm text-red-500">{errors.quizCount.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Homework *
+              </label>
+              <input
+                {...register("homeworkCount", { valueAsNumber: true })}
+                type="number"
+                min={1}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              {errors.homeworkCount && (
+                <p className="mt-1 text-sm text-red-500">{errors.homeworkCount.message}</p>
+              )}
+            </div>
+          </div>
+
           {/* Teacher Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -225,9 +266,6 @@ export default function AddCourseModal({
             </label>
             <select
               {...register("teacherId")}
-              onChange={(e) => {
-                setSelectedTeacher(e.target.value);
-              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Choose a teacher...</option>

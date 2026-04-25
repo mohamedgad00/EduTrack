@@ -4,10 +4,10 @@ export type AttendanceStatus = "present" | "absent";
 export interface StudentGrade {
   studentId: string;
   studentName: string;
-  quizzes?: number;
+  quizzes?: Array<number | undefined>;
   midterm?: number;
   final?: number;
-  homework?: number;
+  homework?: Array<number | undefined>;
   averageGrade?: number;
 }
 
@@ -30,6 +30,8 @@ export interface Course {
   teacherName: string;
   studentIds: string[];
   students: { id: string; name: string }[];
+  quizCount: number;
+  homeworkCount: number;
   createdAt: string;
   updatedAt: string;
   grades: StudentGrade[];
@@ -43,4 +45,6 @@ export interface CreateCoursePayload {
   description: string;
   teacherId: string;
   studentIds: string[];
+  quizCount: number;
+  homeworkCount: number;
 }
