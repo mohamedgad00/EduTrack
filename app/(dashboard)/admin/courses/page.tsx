@@ -11,6 +11,7 @@ import GradeModal from "@/components/modals/GradeModal";
 import AttendanceModal from "@/components/modals/AttendanceModal";
 import { showToast } from "@/utils/toastUtils";
 import { Edit, Trash2, BookOpen, Users, BarChart3, CalendarDays, Plus } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function CoursesPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -54,11 +55,25 @@ export default function CoursesPage() {
     setIsAddCourseModalOpen(true);
   };
 
-  const handleDeleteCourse = (courseId: string) => {
-    if (window.confirm("Are you sure you want to delete this course?")) {
-      dispatch(deleteCourseSuccess(courseId));
-      showToast("success", "Course deleted successfully");
+  const handleDeleteCourse = async (courseId: string) => {
+    const result = await Swal.fire({
+      title: "Delete this course?",
+      text: "You will not be able to undo this action.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete it",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
+      return;
     }
+
+    dispatch(deleteCourseSuccess(courseId));
+    showToast("success", "Course deleted successfully");
   };
 
   const handleViewGrades = (course: Course) => {
