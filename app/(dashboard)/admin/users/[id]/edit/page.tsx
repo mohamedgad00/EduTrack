@@ -20,15 +20,21 @@ interface ApiUser {
   status?: string;
   phone?: string;
   gender?: string;
+  date_of_birth?: string;
   dob?: string;
   username?: string;
   address?: string;
   emergencyContact?: string;
+  level?: string;
   grade?: string;
   classSection?: string;
+  parent_id?: string;
   parentGuardian?: string;
   specialty?: string;
   experience?: string;
+  course_id?: string;
+  enrollmentDate?: string;
+  hireDate?: string;
   linkedStudents?: string[];
   coursesAssigned?: string[];
 }
@@ -38,6 +44,65 @@ interface ApiUserResponse {
   user?: ApiUser;
   result?: ApiUser;
 }
+
+// Temp data using in dev show
+const exampleUsersById: Record<string, ApiUser> = {
+  "1": {
+    id: "1",
+    fullName: "Ahmed Saleh",
+    email: "ahmed@school.com",
+    role: "student",
+    isActive: true,
+    phone: "+20 100 111 2233",
+    gender: "male",
+    date_of_birth: "2005-08-15",
+    username: "ahmed.saleh",
+    level: "Grade 11",
+    classSection: "B",
+    parent_id: "Mona Saleh",
+  },
+  "2": {
+    id: "2",
+    fullName: "Fatima Mohamed",
+    email: "fatima@school.com",
+    role: "teacher",
+    isActive: true,
+    phone: "+20 102 333 4455",
+    gender: "female",
+    date_of_birth: "1987-03-22",
+    username: "fatima.m",
+    specialty: "Mathematics",
+    experience: "8 years",
+    course_id: "Algebra I, Calculus Prep",
+  },
+  "3": {
+    id: "3",
+    fullName: "Sara Khan",
+    email: "sara@school.com",
+    role: "parent",
+    isActive: false,
+    phone: "+20 104 555 6677",
+    gender: "female",
+    date_of_birth: "1979-11-05",
+    username: "sara.k",
+    address: "Zamalek, Cairo",
+    linkedStudents: ["Ahmed Saleh", "Mariam Saleh"],
+  },
+  "4": {
+    id: "4",
+    fullName: "Ali Hassan",
+    email: "ali@school.com",
+    role: "student",
+    isActive: true,
+    phone: "+20 106 777 8899",
+    gender: "male",
+    date_of_birth: "2006-02-10",
+    username: "ali.hassan",
+    level: "Grade 10",
+    classSection: "A",
+    parent_id: "Hassan Ali",
+  },
+};
 
 interface UserFormState {
   fullName: string;
@@ -92,8 +157,9 @@ const normalizeRole = (role: string): RoleFilter => {
 const extractUser = (payload: ApiUserResponse | ApiUser): ApiUser => {
   if (typeof payload === "object" && payload !== null) {
     const responsePayload = payload as ApiUserResponse;
-    if (responsePayload.data || responsePayload.user || responsePayload.result) {
-      return responsePayload.data ?? responsePayload.user ?? responsePayload.result ?? {};
+    const candidate = responsePayload.data ?? responsePayload.user ?? responsePayload.result;
+    if (candidate) {
+      return candidate;
     }
   }
 
@@ -158,19 +224,27 @@ export default function EditUserPage() {
           email: user.email ?? "",
           phone: user.phone ?? "",
           gender: user.gender ?? "",
-          dob: normalizeDateForInput(user.dob),
+          dob: normalizeDateForInput(user.date_of_birth ?? user.dob),
           username: user.username ?? "",
           address: user.address ?? "",
           emergencyContact: user.emergencyContact ?? "",
-          grade: user.grade ?? "",
+          grade: user.level ?? user.grade ?? "",
           classSection: user.classSection ?? "",
-          parentGuardian: user.parentGuardian ?? "",
+          parentGuardian: user.parent_id ?? user.parentGuardian ?? "",
           specialty: user.specialty ?? "",
           experience: user.experience ?? "",
           linkedStudentsText: (user.linkedStudents ?? []).join(", "),
-          coursesAssignedText: (user.coursesAssigned ?? []).join(", "),
+          coursesAssignedText: user.course_id ?? (user.coursesAssigned ?? []).join(", "),
         });
       };
+
+      const staticUser = exampleUsersById[userId];
+      if (staticUser) {
+        setError(null);
+        applyLoadedData(staticUser);
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const response = await api.get<ApiUserResponse | ApiUser>(`users/${encodeURIComponent(userId)}`);
@@ -231,12 +305,15 @@ export default function EditUserPage() {
       email: form.email,
       phone: form.phone,
       gender: form.gender,
+      date_of_birth: form.dob,
       dob: form.dob,
       username: form.username,
       ...(detectedRole === "student"
         ? {
+          level: form.grade,
           grade: form.grade,
           classSection: form.classSection,
+          parent_id: form.parentGuardian,
           parentGuardian: form.parentGuardian,
         }
         : {}),
@@ -244,6 +321,7 @@ export default function EditUserPage() {
         ? {
           specialty: form.specialty,
           experience: form.experience,
+          course_id: form.coursesAssignedText,
           coursesAssigned: parseCsvToArray(form.coursesAssignedText),
         }
         : {}),
@@ -301,6 +379,7 @@ export default function EditUserPage() {
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50 p-8 text-gray-900">
       <main className="mx-auto max-w-5xl py-4">
+        {/* Page Header */}
         <header className="rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -317,6 +396,7 @@ export default function EditUserPage() {
           </div>
         </header>
 
+        {/* User Form */}
         <section className="mt-6 rounded-xl bg-white p-6 shadow-sm border border-gray-100">
           {isLoading ? <p className="text-sm text-gray-500">Loading user data...</p> : null}
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -363,7 +443,6 @@ export default function EditUserPage() {
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
-                    <option value="other">Other</option>
                   </select>
                 </div>
                 <div>
@@ -386,6 +465,7 @@ export default function EditUserPage() {
                 </div>
               </div>
 
+              {/* Student-specific fields */}
               {detectedRole === "student" ? (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   <div>
@@ -418,6 +498,7 @@ export default function EditUserPage() {
                 </div>
               ) : null}
 
+              {/* Teacher-specific fields */}
               {detectedRole === "teacher" ? (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   <div>
@@ -450,6 +531,7 @@ export default function EditUserPage() {
                 </div>
               ) : null}
 
+              {/* Parent-specific fields */}
               {detectedRole === "parent" ? (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
@@ -459,15 +541,6 @@ export default function EditUserPage() {
                       className={inputClass}
                       value={form.linkedStudentsText}
                       onChange={(event) => setField("linkedStudentsText", event.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">Emergency Contact</label>
-                    <input
-                      type="text"
-                      className={inputClass}
-                      value={form.emergencyContact}
-                      onChange={(event) => setField("emergencyContact", event.target.value)}
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -482,6 +555,7 @@ export default function EditUserPage() {
                 </div>
               ) : null}
 
+              {/* Save Button */}
               <div className="flex justify-end">
                 <button
                   type="submit"
