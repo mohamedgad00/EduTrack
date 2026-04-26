@@ -11,21 +11,22 @@ type RoleFilter = "all" | "student" | "teacher" | "parent";
 interface ApiUser {
   id?: string | number;
   _id?: string;
-  fullName?: string;
-  name?: string;
-  email?: string;
   role?: string;
-  isActive?: boolean;
-  status?: string;
+  fullName?: string;
+  email?: string;
   phone?: string;
   gender?: string;
-  dob?: string;
+  date_of_birth: string;
   username?: string;
-  address?: string;
-  emergencyContact?: string;
-  grade?: string;
+  level?: string;
   classSection?: string;
-  parentGuardian?: string;
+  parent_id?: string;
+  enrollmentDate?: string;
+  course_id?: string;
+  hireDate?: string;
+  address?: string;
+  isActive?: boolean;
+  status?: string;
   specialty?: string;
   experience?: string;
   createdAt?: string;
@@ -37,6 +38,58 @@ interface ApiUserResponse {
   user?: ApiUser;
   result?: ApiUser;
 }
+
+// Static example users for testing and development purposes, allowing the page to display user information without relying on API calls for known user IDs. This can improve development speed and provide a fallback for demonstration purposes.
+const exampleUsersById: Record<string, ApiUser> = {
+  "1": {
+    id: "1",
+    fullName: "Ahmed Saleh",
+    email: "ahmed@school.com",
+    role: "student",
+    isActive: true,
+    phone: "+20 100 111 2233",
+    username: "ahmed.saleh",
+    gender: "Male",
+    date_of_birth: "2005-08-15",
+    address: "Nasr City, Cairo",
+  },
+  "2": {
+    id: "2",
+    fullName: "Fatima Mohamed",
+    email: "fatima@school.com",
+    role: "teacher",
+    isActive: true,
+    phone: "+20 102 333 4455",
+    username: "fatima.m",
+    gender: "Female",
+    date_of_birth: "1980-03-22",
+    address: "Heliopolis, Cairo",
+  },
+  "3": {
+    id: "3",
+    fullName: "Sara Khan",
+    email: "sara@school.com",
+    role: "parent",
+    isActive: false,
+    phone: "+20 104 555 6677",
+    username: "sara.k",
+    gender: "Female",
+    date_of_birth: "1975-11-05",
+    address: "Zamalek, Cairo",
+  },
+  "4": {
+    id: "4",
+    fullName: "Ali Hassan",
+    email: "ali@school.com",
+    role: "student",
+    isActive: true,
+    phone: "+20 106 777 8899",
+    username: "ali.hassan",
+    gender: "Male",
+    date_of_birth: "2006-02-10",
+    address: "Maadi, Cairo",
+  },
+};
 
 const roleBadgeClass: Record<string, string> = {
   student: "bg-blue-50 text-blue-700",
@@ -76,8 +129,9 @@ const formatDate = (value?: string) => {
 const extractUser = (payload: ApiUserResponse | ApiUser): ApiUser => {
   if (typeof payload === "object" && payload !== null) {
     const responsePayload = payload as ApiUserResponse;
-    if (responsePayload.data || responsePayload.user || responsePayload.result) {
-      return responsePayload.data ?? responsePayload.user ?? responsePayload.result ?? {};
+    const candidate = responsePayload.data ?? responsePayload.user ?? responsePayload.result;
+    if (candidate) {
+      return candidate;
     }
   }
 
@@ -107,6 +161,14 @@ export default function UserInformationPage() {
     const loadUser = async () => {
       if (!userId) {
         setError("Invalid user id.");
+        setIsLoading(false);
+        return;
+      }
+
+      // First checks if the user information is available in the static example data. If found, it sets the user state immediately without making an API call, providing a faster experience for known users. This also allows for testing and development without relying on the backend.
+      const staticUser = exampleUsersById[userId];
+      if (staticUser) {
+        setUser(staticUser);
         setIsLoading(false);
         return;
       }
@@ -195,7 +257,7 @@ export default function UserInformationPage() {
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-gray-500">Name</span>
-                  <span className="font-medium text-gray-900 text-right">{user.fullName ?? user.name ?? "-"}</span>
+                  <span className="font-medium text-gray-900 text-right">{user.fullName ?? user.fullName ?? "-"}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-gray-500">Email</span>
@@ -235,15 +297,11 @@ export default function UserInformationPage() {
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-gray-500">Date of Birth</span>
-                  <span className="font-medium text-gray-900 text-right">{formatDate(user.dob)}</span>
+                  <span className="font-medium text-gray-900 text-right">{formatDate(user.date_of_birth)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-gray-500">Address</span>
                   <span className="font-medium text-gray-900 text-right">{user.address ?? "-"}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-gray-500">Emergency Contact</span>
-                  <span className="font-medium text-gray-900 text-right">{user.emergencyContact ?? "-"}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-gray-500">Created</span>
