@@ -263,7 +263,7 @@ export default function TeacherDashboard() {
             </button>
             <div className="flex items-center gap-2 cursor-pointer">
               <Image
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                src="/images/teacher-1.png"
                 alt="Teacher"
                 width={32}
                 height={32}
@@ -283,14 +283,14 @@ export default function TeacherDashboard() {
                 <h2 className="text-2xl font-bold mb-2">
                   Welcome back, Sarah! 👋
                 </h2>
-                <p className="text-blue-100">
+                {/* <p className="text-blue-100">
                   You have 3 classes today and 2 quizzes to review.
-                </p>
+                </p> */}
               </div>
-              <button className="hidden lg:flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-md font-medium hover:shadow-lg transition-all">
+              {/* <button className="hidden lg:flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-md font-medium hover:shadow-lg transition-all">
                 <Plus className="w-4 h-4" />
                 Create Quiz
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -473,6 +473,8 @@ export default function TeacherDashboard() {
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+            {/* Performance Chart */}
             <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-gray-900">
@@ -488,6 +490,7 @@ export default function TeacherDashboard() {
               </div>
             </div>
 
+            {/* Attendance Summary */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-6">
                 Attendance Summary
@@ -516,6 +519,7 @@ export default function TeacherDashboard() {
 
           {/* Bottom Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
             {/* Upcoming Quizzes */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
@@ -651,7 +655,7 @@ export default function TeacherDashboard() {
               </div>
             </div>
 
-            {/* Announcements */}
+            {/* Class Announcements */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900">
