@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 
 // Types 
-
 interface Course {
   title: string;
   instructor: string;
@@ -38,7 +37,6 @@ interface Notification {
 }
 
 // Data 
-
 const courses: Course[] = [
   {
     title: "Advanced Mathematics",
@@ -149,7 +147,6 @@ const notifications: Notification[] = [
 ];
 
 // Helpers 
-
 const urgencyStyles: Record<
   Deadline["urgency"],
   { bg: string; border: string; dateBorder: string; dateText: string; badge: string }
@@ -177,11 +174,6 @@ const urgencyStyles: Record<
   },
 };
 
-const courseProgressColor: Record<string, string> = {
-  "from-blue-400 to-blue-600": "from-blue-500 to-blue-600",
-  "from-purple-400 to-purple-600": "from-purple-500 to-purple-600",
-  "from-teal-400 to-teal-600": "from-teal-500 to-teal-600",
-};
 
 const courseButtonColor: Record<string, string> = {
   "from-blue-400 to-blue-600":
@@ -192,14 +184,7 @@ const courseButtonColor: Record<string, string> = {
     "from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700",
 };
 
-const courseProgressText: Record<string, string> = {
-  "from-blue-400 to-blue-600": "text-blue-600",
-  "from-purple-400 to-purple-600": "text-purple-600",
-  "from-teal-400 to-teal-600": "text-teal-600",
-};
-
 // Component 
-
 export default function StudentDashboard() {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<unknown>(null);
@@ -412,7 +397,7 @@ export default function StudentDashboard() {
             </button>
             <div className="flex items-center gap-2 cursor-pointer">
               <Image
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                src="/images/student-1.png"
                 alt="Student"
                 width={32}
                 height={32}
@@ -438,7 +423,7 @@ export default function StudentDashboard() {
                 </p>
               </div>
               <Image
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                src="/images/student-1.png"
                 alt="Student"
                 width={96}
                 height={96}
@@ -488,7 +473,7 @@ export default function StudentDashboard() {
                   <div className="p-5">
                     <h3 className="font-semibold text-gray-900 mb-1">{course.title}</h3>
                     <p className="text-sm text-gray-500 mb-3">By {course.instructor}</p>
-                    <div className="mb-4">
+                    {/* <div className="mb-4">
                       <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
                         <span>Progress</span>
                         <span className={`font-medium ${courseProgressText[course.color]}`}>{course.progress}%</span>
@@ -499,9 +484,11 @@ export default function StudentDashboard() {
                           style={{ width: `${course.progress}%` }}
                         />
                       </div>
-                    </div>
+                    </div> */}
+
+                    {/* show course button */}
                     <button className={`w-full px-4 py-2.5 text-sm font-medium text-white bg-linear-to-r ${courseButtonColor[course.color]} rounded-lg transition-all shadow-md`}>
-                      Continue Learning
+                      Show Course
                     </button>
                   </div>
                 </div>
@@ -527,7 +514,7 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            {/* Deadlines */}
+            {/* Upcoming Deadlines */}
             <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-4">Upcoming Deadlines</h3>
               <div className="space-y-3">
@@ -551,6 +538,7 @@ export default function StudentDashboard() {
                 })}
               </div>
             </div>
+
           </div>
 
           {/* Activity + Notifications */}
