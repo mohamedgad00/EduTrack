@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Users,
   LayoutDashboard,
   Baby,
   BookOpen,
@@ -16,7 +15,6 @@ import {
   Search,
   Bell,
   ChevronDown,
-  Plus,
   TrendingUp,
   Award,
   ClipboardList,
@@ -24,21 +22,14 @@ import {
   Calendar,
   Menu,
   X,
+  GraduationCap,
 } from "lucide-react";
 import { Chart, ArcElement, Tooltip, Legend, DoughnutController } from "chart.js";
 import Image from "next/image";
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
-// ─── Types 
-
-interface Child {
-  id: number;
-  name: string;
-  grade: string;
-  avatar: string;
-  active: boolean;
-}
+// Types 
 
 interface Course {
   name: string;
@@ -68,25 +59,6 @@ interface Message {
 }
 
 // Static Data 
-
-const children: Child[] = [
-  {
-    id: 1,
-    name: "Alex Mitchell",
-    grade: "Grade 10",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    active: true,
-  },
-  {
-    id: 2,
-    name: "Emma Mitchell",
-    grade: "Grade 7",
-    avatar:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    active: false,
-  },
-];
 
 const courses: Course[] = [
   { name: "Advanced Mathematics", teacher: "Prof. Sarah Johnson", grade: 85, color: "blue" },
@@ -168,7 +140,7 @@ const messages: Message[] = [
   },
 ];
 
-// Sub-components 
+// Sub-components
 
 function CourseBar({ course }: { course: Course }) {
   const colorMap: Record<string, { bg: string; bar: string; text: string; label: string; border: string }> = {
@@ -258,10 +230,8 @@ function AttendanceChart() {
 }
 
 // Main Component 
-
 export default function ParentDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedChild, setSelectedChild] = useState<number>(1);
 
   const navItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, active: true },
@@ -297,7 +267,7 @@ export default function ParentDashboard() {
         <div className="h-16 flex items-center px-6 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-linear-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white shadow">
-              <Users className="w-5 h-5" />
+              <GraduationCap className="w-5 h-5" />
             </div>
             <span className="font-bold text-xl text-gray-900">EduTrack</span>
           </div>
@@ -404,7 +374,7 @@ export default function ParentDashboard() {
             </button>
             <div className="flex items-center gap-2 cursor-pointer">
               <Image
-                src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                src="/images/parent-1.png"
                 alt="Parent"
                 width={32}
                 height={32}
@@ -429,7 +399,7 @@ export default function ParentDashboard() {
                 <p className="text-blue-50 text-sm italic">&quot;Your support makes success possible.&quot;</p>
               </div>
               <Image
-                src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                src="/images/parent-1.png"
                 alt="Parent"
                 width={96}
                 height={96}
@@ -438,65 +408,7 @@ export default function ParentDashboard() {
             </div>
           </div>
 
-          {/* Child Selection */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Child</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {children.map((child) => {
-                const isSelected = selectedChild === child.id;
-                return (
-                  <div
-                    key={child.id}
-                    onClick={() => setSelectedChild(child.id)}
-                    className={`bg-white p-5 rounded-2xl shadow border-2 hover:shadow-lg transition-all cursor-pointer ${isSelected ? "border-blue-500" : "border-gray-200 hover:border-blue-300"
-                      }`}
-                  >
-                    <div className="flex items-center gap-4 mb-3">
-                      <Image
-                        src={child.avatar}
-                        alt={child.name}
-                        width={64}
-                        height={64}
-                        className={`w-16 h-16 rounded-full object-cover border-2 ${isSelected ? "border-blue-200" : "border-gray-200"
-                          }`}
-                      />
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900">{child.name}</h4>
-                        <p className="text-sm text-gray-500">{child.grade}</p>
-                        <span
-                          className={`inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full ${isSelected
-                            ? "text-blue-600 bg-blue-50"
-                            : "text-gray-600 bg-gray-100"
-                            }`}
-                        >
-                          {isSelected ? "Active" : "Select"}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      className={`w-full px-4 py-2 text-sm font-medium rounded-lg transition-all ${isSelected
-                        ? "text-white bg-linear-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow"
-                        : "text-blue-600 bg-blue-50 hover:bg-blue-100"
-                        }`}
-                    >
-                      View Details
-                    </button>
-                  </div>
-                );
-              })}
-
-              {/* Add child */}
-              <div className="bg-linear-to-br from-gray-50 to-gray-100 p-5 rounded-2xl border-2 border-dashed border-gray-300 hover:border-blue-400 hover:shadow transition-all cursor-pointer flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-3 shadow">
-                  <Plus className="w-8 h-8 text-gray-400" />
-                </div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Add Another Child</p>
-                <p className="text-xs text-gray-400">Link a new student account</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats */}
+          {/* Stats cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[
               {
@@ -554,6 +466,8 @@ export default function ParentDashboard() {
 
           {/* Attendance + Courses */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+            {/* Attendance chart */}
             <div className="bg-white p-6 rounded-2xl shadow border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-4">Attendance Overview</h3>
               <div className="h-64 flex items-center justify-center">
@@ -571,6 +485,7 @@ export default function ParentDashboard() {
               </div>
             </div>
 
+            {/* Course Performance */}
             <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900">Course Performance</h3>
@@ -586,6 +501,8 @@ export default function ParentDashboard() {
 
           {/* Events + Announcements */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+            {/* Upcoming Events & Deadlines */}
             <div className="bg-white p-6 rounded-2xl shadow border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-4">Upcoming Events &amp; Deadlines</h3>
               <div className="space-y-4">
@@ -610,6 +527,7 @@ export default function ParentDashboard() {
               </div>
             </div>
 
+            {/* Recent Announcements */}
             <div className="bg-white p-6 rounded-2xl shadow border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900">Recent Announcements</h3>
@@ -679,9 +597,10 @@ export default function ParentDashboard() {
                 ))}
               </div>
             </div>
+
           </div>
 
-          {/* Messages */}
+          {/* Recent Messages */}
           <div className="bg-white p-6 rounded-2xl shadow border border-gray-100 mb-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-900">Recent Messages</h3>
