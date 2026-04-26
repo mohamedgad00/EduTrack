@@ -94,6 +94,66 @@ const extractUsers = (payload: ApiUsersResponse | ApiUser[]) => {
   return [] as ApiUser[];
 };
 
+// Example static users for demonstration purposes
+const exampleUsers: TableUser[] = [
+  {
+    key: "1-ahmed@school.com",
+    userId: "1",
+    initials: "AS",
+    initClass: "bg-blue-100 text-blue-700",
+    name: "Ahmed Saleh",
+    email: "ahmed@school.com",
+    role: "Student",
+    roleClass: "bg-blue-50 text-blue-700",
+    roleSlug: "student",
+    status: "Active",
+    statusClass: "bg-green-50 text-green-700",
+    dotClass: "bg-green-500",
+  },
+  {
+    key: "2-fatima@school.com",
+    userId: "2",
+    initials: "FM",
+    initClass: "bg-purple-100 text-purple-700",
+    name: "Fatima Mohamed",
+    email: "fatima@school.com",
+    role: "Teacher",
+    roleClass: "bg-purple-50 text-purple-700",
+    roleSlug: "teacher",
+    status: "Active",
+    statusClass: "bg-green-50 text-green-700",
+    dotClass: "bg-green-500",
+  },
+  {
+    key: "3-sara@school.com",
+    userId: "3",
+    initials: "SK",
+    initClass: "bg-orange-100 text-orange-700",
+    name: "Sara Khan",
+    email: "sara@school.com",
+    role: "Parent",
+    roleClass: "bg-orange-50 text-orange-700",
+    roleSlug: "parent",
+    status: "Offline",
+    statusClass: "bg-gray-100 text-gray-600",
+    dotClass: "bg-gray-400",
+  },
+  {
+    key: "4-ali@school.com",
+    userId: "4",
+    initials: "AH",
+    initClass: "bg-blue-100 text-blue-700",
+    name: "Ali Hassan",
+    email: "ali@school.com",
+    role: "Student",
+    roleClass: "bg-blue-50 text-blue-700",
+    roleSlug: "student",
+    status: "Active",
+    statusClass: "bg-green-50 text-green-700",
+    dotClass: "bg-green-500",
+  },
+];
+
 const getInitials = (name: string) => {
   const initials = name
     .split(" ")
@@ -149,8 +209,8 @@ export default function UsersPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [users, setUsers] = useState<TableUser[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState<TableUser[]>(exampleUsers);
+  const [isLoading, setIsLoading] = useState(false);
   const [deletingUserKey, setDeletingUserKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
