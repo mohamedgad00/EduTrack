@@ -158,7 +158,7 @@ export default function LoginPage() {
         <div className="relative z-10 flex-1 flex items-center justify-center">
           <div className="relative w-full max-w-lg">
             <Image
-              src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80"
+              src="/images/login.png"
               alt="Students collaborating"
               width={800}
               height={533}
