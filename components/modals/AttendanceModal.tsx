@@ -1,7 +1,7 @@
 "use client";
 
 import { X, Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Course, StudentAttendance, AttendanceStatus } from "@/types/course";
 
 interface AttendanceModalProps {
@@ -17,18 +17,7 @@ export default function AttendanceModal({
   course,
   onSaveAttendance,
 }: AttendanceModalProps) {
-  const [attendance, setAttendance] = useState<StudentAttendance[]>(
-    course?.attendance ||
-    course?.students.map((s) => ({
-      studentId: s.id,
-      studentName: s.name,
-      attendance: {},
-      totalPresent: 0,
-      totalAbsent: 0,
-      attendancePercentage: 0,
-    })) ||
-    []
-  );
+  const [attendance, setAttendance] = useState<StudentAttendance[]>([]);
   const [newDateInput, setNewDateInput] = useState("");
 
   const dates = attendance.length > 0 ? Object.keys(attendance[0]?.attendance || {}) : [];
@@ -36,18 +25,82 @@ export default function AttendanceModal({
   const handleAddDate = () => {
     if (!newDateInput) return;
 
-    setAttendance((prev) =>
-      prev.map((record) => ({
-        ...record,
-        attendance: {
+    setAttendance((prev) => {
+      const date = newDateInput;
+
+      const base = prev.length
+        ? prev
+        : course?.students.map((s) => ({
+          studentId: s.id,
+          studentName: s.name,
+          attendance: {} as Record<string, AttendanceStatus>,
+          totalPresent: 0,
+          totalAbsent: 0,
+          attendancePercentage: 0,
+        })) || [];
+
+      const updated = base.map((record) => {
+        const newAttendance = {
           ...record.attendance,
-          [newDateInput]: "present" as AttendanceStatus,
-        },
-      }))
-    );
+          [date]: record.attendance[date] || ("present" as AttendanceStatus),
+        };
+
+        const presentCount = Object.values(newAttendance).filter((s) => s === "present").length;
+        const absentCount = Object.values(newAttendance).filter((s) => s === "absent").length;
+        const total = presentCount + absentCount;
+
+        return {
+          ...record,
+          attendance: newAttendance,
+          totalPresent: presentCount,
+          totalAbsent: absentCount,
+          attendancePercentage: total > 0 ? Math.round((presentCount / total) * 100) : 0,
+        };
+      });
+
+      return updated;
+    });
 
     setNewDateInput("");
   };
+
+  // Ensure attendance list always reflects current course students when modal opens
+  useEffect(() => {
+    if (!isOpen || !course) return;
+
+    const existing = course.attendance || [];
+    const existingMap = new Map<string, StudentAttendance>(
+      existing.map((e) => [e.studentId, e])
+    );
+
+    const merged = course.students.map((s) => {
+      const ex = existingMap.get(s.id);
+      const record: StudentAttendance = ex
+        ? { ...ex, studentName: s.name }
+        : {
+          studentId: s.id,
+          studentName: s.name,
+          attendance: {} as Record<string, AttendanceStatus>,
+          totalPresent: 0,
+          totalAbsent: 0,
+          attendancePercentage: 0,
+        };
+
+      const presentCount = Object.values(record.attendance).filter((v) => v === "present").length;
+      const absentCount = Object.values(record.attendance).filter((v) => v === "absent").length;
+      const total = presentCount + absentCount;
+
+      return {
+        ...record,
+        totalPresent: presentCount,
+        totalAbsent: absentCount,
+        attendancePercentage: total > 0 ? Math.round((presentCount / total) * 100) : 0,
+      } as StudentAttendance;
+    });
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAttendance(merged);
+  }, [isOpen, course]);
 
   const handleToggleAttendance = (studentId: string, date: string) => {
     setAttendance((prev) =>
@@ -88,7 +141,8 @@ export default function AttendanceModal({
   const handleRemoveDate = (date: string) => {
     setAttendance((prev) =>
       prev.map((record) => {
-        const { [date]: _, ...restAttendance } = record.attendance;
+        const restAttendance = { ...record.attendance };
+        delete restAttendance[date];
 
         const presentCount = Object.values(restAttendance).filter(
           (s) => s === "present"
@@ -196,8 +250,8 @@ export default function AttendanceModal({
                           <button
                             onClick={() => handleToggleAttendance(record.studentId, date)}
                             className={`w-full py-2 px-2 rounded font-medium transition-colors text-sm ${status === "present"
-                                ? "bg-green-100 text-green-800 hover:bg-green-200"
-                                : "bg-red-100 text-red-800 hover:bg-red-200"
+                              ? "bg-green-100 text-green-800 hover:bg-green-200"
+                              : "bg-red-100 text-red-800 hover:bg-red-200"
                               }`}
                           >
                             {status === "present" ? "✓ Present" : "✗ Absent"}
