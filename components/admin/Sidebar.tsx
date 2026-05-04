@@ -2,7 +2,7 @@
 
 import {
   GraduationCap, LayoutDashboard, Users, BookOpen,
-  ClipboardList, FileQuestion, BarChart2, Megaphone,
+  ClipboardList, BarChart2, Megaphone,
   Settings, LogOut, LucideIcon, X,
 } from "lucide-react";
 import Image from "next/image";
@@ -29,7 +29,6 @@ const navItems: NavGroup[] = [
   {
     section: "Academic",
     items: [
-      { label: "Quizzes", icon: FileQuestion, href: "#" },
       { label: "Reports & Analytics", icon: BarChart2, href: "#" },
     ],
   },
