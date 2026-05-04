@@ -42,13 +42,14 @@ interface LoginResponse {
 export const loginUser = createAsyncThunk(
   '/auth/login',
   async (
-    { email, password }: { email: string; password: string },
+    { email, password, role }: { email: string; password: string; role: User['role'] },
     { rejectWithValue },
   ) => {
     try {
       const response = await api.post<LoginResponse>('auth/login', {
         email,
         password,
+        role,
       });
 
       const { user, access_token } = response.data;
