@@ -22,13 +22,10 @@ import { z } from "zod";
 
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
-import { loginUser } from "@/redux/features/auth/authSlice";
+import { loginUser, getMe } from "@/redux/features/auth/authSlice";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/utils/toastUtils";
 import Cookies from "js-cookie";
-
-const ADMIN_EMAIL = "admin@edutrack.com";
-const ADMIN_PASSWORD = "Admin@123456";
 
 const ROLES = [
   { key: "student", label: "Student", icon: User },
@@ -47,6 +44,7 @@ const loginSchema = z.object({
 });
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
+type UserRole = "student" | "teacher" | "parent" | "admin";
 
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
@@ -70,36 +68,44 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormInputs) => {
-    if (data.role === "admin") {
-      const isValidAdminCredentials =
-        data.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() &&
-        data.password === ADMIN_PASSWORD;
-
-      if (!isValidAdminCredentials) {
-        Cookies.remove("admin_auth");
-        showToast("error", "Invalid admin email or password.");
-        return;
-      }
-
-      const adminCookieOptions = {
-        path: "/",
-        ...(rememberMe ? { expires: 7 } : {}),
-      };
-
-      Cookies.set("admin_auth", "true", adminCookieOptions);
-      showToast("success", "Admin login successful.");
-      router.push("/admin");
-      return;
-    }
-
     Cookies.remove("admin_auth", { path: "/" });
 
     try {
       const action = await dispatch(
-        loginUser({ email: data.email, password: data.password })
+        loginUser({ email: data.email, password: data.password, role: data.role })
       );
 
       if (loginUser.fulfilled.match(action)) {
+        let role = action.payload.user?.role as UserRole | undefined;
+
+        if (!role) {
+          const meAction = await dispatch(getMe());
+          if (getMe.fulfilled.match(meAction)) {
+            role = meAction.payload.user.role;
+          }
+        }
+
+        if (!role) {
+          showToast("error", "Login succeeded, but user role could not be resolved.");
+          return;
+        }
+
+        if (role === "admin") {
+          const adminCookieOptions = {
+            path: "/",
+            ...(rememberMe ? { expires: 7 } : {}),
+          };
+
+          Cookies.set("admin_auth", "true", adminCookieOptions);
+          router.replace("/admin");
+        } else if (role === "teacher") {
+          router.replace("/teacher");
+        } else if (role === "student") {
+          router.replace("/student");
+        } else if (role === "parent") {
+          router.replace("/parent");
+        }
+
         showToast("success", "Login successful.");
         return;
       }
@@ -120,13 +126,13 @@ export default function LoginPage() {
         router.push("/admin");
         break;
       case "teacher":
-        router.push("/dashboard/teacher");
+        router.push("/teacher");
         break;
       case "student":
-        router.push("/dashboard/student");
+        router.push("/student");
         break;
       case "parent":
-        router.push("/dashboard/parent");
+        router.push("/parent");
         break;
     }
   }, [user, router]);
