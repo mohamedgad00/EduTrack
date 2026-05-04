@@ -29,7 +29,7 @@ const navItems: NavGroup[] = [
   {
     section: "Academic",
     items: [
-      { label: "Reports & Analytics", icon: BarChart2, href: "#" },
+      { label: "Reports & Analytics", icon: BarChart2, href: "/admin/analytics" },
     ],
   },
   {
