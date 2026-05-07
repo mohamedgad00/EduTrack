@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Announcements, RecentActivity, UpcomingQuizzes } from "@/components/admin/BottomWidgets";
 import Charts from "@/components/admin/Charts";
 import KpiCards from "@/components/admin/KpiCards";
@@ -10,6 +11,7 @@ import { RecentUsers } from "@/components/admin/RecentUsers";
 import AddUserModal from "@/components/modals/AddUserModal";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
   if (isAddUserModalOpen) {
@@ -25,7 +27,10 @@ export default function DashboardPage() {
       {/* Quick Actions + Recent Users */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
         <div className="xl:col-span-1">
-          <QuickActions onAddUserClick={() => setIsAddUserModalOpen(true)} />
+          <QuickActions
+            onAddUserClick={() => setIsAddUserModalOpen(true)}
+            onAddCourseClick={() => router.push("/admin/courses")}
+          />
         </div>
         <div className="xl:col-span-2">
           <RecentUsers />
