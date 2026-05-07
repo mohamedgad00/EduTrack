@@ -40,7 +40,6 @@ const formSchema = z
     enrollmentDate: z.string().optional(),
     specialty: z.string().optional(),
     experience: z.string().optional(),
-    course_id: z.string().min(1, "You must assign a course"),
     hireDate: z.string().optional(),
     address: z.string().optional(),
   })
@@ -72,9 +71,6 @@ const formSchema = z
       if (!data.experience) {
         context.addIssue({ code: "custom", path: ["experience"], message: "This field is required" });
       }
-      if (!data.course_id) {
-        context.addIssue({ code: "custom", path: ["course_id"], message: "This field is required" });
-      }
       if (!data.hireDate) {
         context.addIssue({ code: "custom", path: ["hireDate"], message: "This field is required" });
       }
@@ -104,7 +100,6 @@ const defaultValues = {
   enrollmentDate: "",
   specialty: "",
   experience: "",
-  course_id: "",
   hireDate: "",
   address: "",
 } satisfies FormValues;
@@ -210,7 +205,6 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
         ? {
           specialty: data.specialty,
           experience: data.experience,
-          course_id: data.course_id,
           hireDate: data.hireDate,
         }
         : {}),
@@ -497,7 +491,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                         </div>
                       </div>
                       <div className="space-y-4">
-                        <div>
+                        {/* <div>
                           <label className="mb-2 block text-sm font-medium text-gray-700">
                             Courses Assigned <span className="text-red-500">*</span>
                           </label>
@@ -514,7 +508,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                           {errors.course_id?.message ? (
                             <span className="mt-1 text-sm text-red-500">{errors.course_id.message}</span>
                           ) : null}
-                        </div>
+                        </div> */}
                         <div>
                           <label className="mb-2 block text-sm font-medium text-gray-700">
                             Hire Date <span className="text-red-500">*</span>
