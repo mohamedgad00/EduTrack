@@ -44,7 +44,6 @@ export interface CreateUserPayload {
   enrollmentDate?: string;
   specialty?: string;
   experience?: string;
-  course_id?: string;
   hireDate?: string;
   address?: string;
 }
