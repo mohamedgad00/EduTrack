@@ -72,7 +72,7 @@ export const loginUser = createAsyncThunk(
         return rejectWithValue("Login failed. Token not found in response.");
       }
 
-      Cookies.set("token", token, { expires: 7 });
+      Cookies.set("token", token, { expires: 7, path: "/" });
       return { user, token };
     } catch (error) {
       console.log("Login error:", error);
@@ -85,7 +85,7 @@ export const logoutUser = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      Cookies.remove("token");
+      Cookies.remove("token", { path: "/" });
     } catch (error) {
       console.log("Logout error:", error);
       return rejectWithValue("Logout failed.");

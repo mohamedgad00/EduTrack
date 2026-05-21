@@ -21,7 +21,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor
@@ -30,11 +30,11 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       // Handle unauthorized access (e.g., redirect to login page)
-      Cookies.remove("token");
+      Cookies.remove("token", { path: "/" });
       // You might want to dispatch a logout action here or redirect to login page
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

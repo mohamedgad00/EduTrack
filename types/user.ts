@@ -63,6 +63,7 @@ export interface UserResponseDto {
   role: UserRole;
   phone?: string;
   gender?: string;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
   profile?: StudentProfile | TeacherProfile | ParentProfile | null;

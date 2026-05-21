@@ -16,12 +16,7 @@ import {
   clearUsersError,
   resetSelectedUser,
 } from "@/redux/features/users/usersSlice";
-import {
-  CreateUserDto,
-  UpdateUserDto,
-  UserRole,
-  UserResponseDto,
-} from "@/types/user";
+import { CreateUserDto, UpdateUserDto, UserRole } from "@/types/user";
 import { AppDispatch, RootState } from "@/redux/store";
 
 /**
@@ -36,7 +31,7 @@ export const useUsersList = () => {
     pageSize,
     isLoadingUsers,
     usersError,
-  } = useSelector((state: RootState) => state.users);
+  } = useSelector<RootState, RootState["users"]>((state) => state.users);
 
   const fetchUsersList = useCallback(
     (
@@ -170,7 +165,7 @@ export const useDeleteUser = () => {
 
   const remove = useCallback(
     (id: string) => {
-      dispatch(deleteUser(id));
+      return dispatch(deleteUser(id));
     },
     [dispatch],
   );
@@ -194,7 +189,7 @@ export const useDeleteUser = () => {
 export const useDashboardStats = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { dashboardStats, isLoadingStats, statsLoaded, statsError } =
-    useSelector((state: RootState) => state.users);
+    useSelector<RootState, RootState["users"]>((state) => state.users);
 
   const fetchStats = useCallback(() => {
     dispatch(fetchDashboardStats());

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Eye, Pencil, Search, Trash2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -81,7 +81,7 @@ const sanitizeRole = (role: string): RoleFilter => {
 };
 
 // Maps a UserResponseDto to a TableUser, applying necessary transformations and fallbacks.
-const mapApiUserToTableUser = (user: UserResponseDto, index: number): TableUser => {
+const mapApiUserToTableUser = (user: UserResponseDto): TableUser => {
   const roleRaw = (user.role ?? "unknown").toLowerCase();
   const roleSlug = sanitizeRole(roleRaw);
   const roleStyle = roleStyles[roleRaw] ?? fallbackRoleStyle;
@@ -122,15 +122,13 @@ export default function UsersPage() {
     clearDeleteError,
   } = useUsers();
 
-  const [deletingUserKey, setDeletingUserKey] = useState<string | null>(null);
-
   const activeRoleFilter = sanitizeRole((searchParams.get("role") ?? "all").toLowerCase());
   const searchQuery = searchParams.get("q")?.trim() ?? "";
   const currentPageParam = Number(searchParams.get("page") ?? "1");
 
   // Map the Redux users to table users
   const tableUsers = useMemo(() => {
-    return users.map((user, index) => mapApiUserToTableUser(user, index));
+    return users.map((user) => mapApiUserToTableUser(user));
   }, [users]);
 
   // Load users on mount and when filters change
@@ -225,17 +223,12 @@ export default function UsersPage() {
       return;
     }
 
-    setDeletingUserKey(user.key);
-    deleteUser(user.userId);
-  };
+    const result = await deleteUser(user.userId);
 
-  // Show success toast when delete is complete
-  useEffect(() => {
-    if (!isDeleting && deletingUserKey && deletingUserId) {
+    if (result.type.endsWith("/fulfilled")) {
       showToast("success", "User deleted successfully.");
-      setDeletingUserKey(null);
     }
-  }, [isDeleting, deletingUserKey, deletingUserId]);
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
@@ -315,7 +308,7 @@ export default function UsersPage() {
                 </tr>
               ) : null}
 
-              {!isLoading &&
+              {!isLoadingUsers &&
                 paginatedUsers.map((user) => (
                   <tr key={user.key} className="hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-2">
