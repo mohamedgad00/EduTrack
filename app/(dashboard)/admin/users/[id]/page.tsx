@@ -17,6 +17,8 @@ interface ApiUser {
   phone?: string;
   gender?: string;
   date_of_birth: string;
+  dateOfBirth?: string;
+  dob?: string;
   username?: string;
   level?: string;
   classSection?: string;
@@ -31,6 +33,12 @@ interface ApiUser {
   experience?: string;
   createdAt?: string;
   updatedAt?: string;
+  profile?: {
+    dateOfBirth?: string;
+    date_of_birth?: string;
+    dob?: string;
+    address?: string;
+  };
 }
 
 interface ApiUserResponse {
@@ -125,6 +133,11 @@ const formatDate = (value?: string) => {
     year: "numeric",
   }).format(parsedDate);
 };
+
+const getDateOfBirth = (user?: ApiUser | null) =>
+  user?.date_of_birth ?? user?.dateOfBirth ?? user?.dob ?? user?.profile?.dateOfBirth ?? user?.profile?.date_of_birth ?? user?.profile?.dob;
+
+const getAddress = (user?: ApiUser | null) => user?.address ?? user?.profile?.address;
 
 const extractUser = (payload: ApiUserResponse | ApiUser): ApiUser => {
   if (typeof payload === "object" && payload !== null) {
@@ -221,6 +234,8 @@ export default function UserInformationPage() {
   const roleSlug = useMemo(() => normalizeRole((user?.role ?? roleHint).toLowerCase()), [roleHint, user?.role]);
   const roleClass = roleBadgeClass[roleSlug] ?? "bg-gray-100 text-gray-700";
   const isActive = user?.isActive === true || user?.status?.toLowerCase() === "active";
+  const dateOfBirth = getDateOfBirth(user);
+  const address = getAddress(user);
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
@@ -297,11 +312,11 @@ export default function UserInformationPage() {
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-gray-500">Date of Birth</span>
-                  <span className="font-medium text-gray-900 text-right">{formatDate(user.date_of_birth)}</span>
+                  <span className="font-medium text-gray-900 text-right">{formatDate(dateOfBirth)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-gray-500">Address</span>
-                  <span className="font-medium text-gray-900 text-right">{user.address ?? "-"}</span>
+                  <span className="font-medium text-gray-900 text-right">{address ?? "-"}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-gray-500">Created</span>
