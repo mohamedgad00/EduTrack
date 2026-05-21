@@ -120,17 +120,13 @@ export function RecentUsers() {
       setError(null);
 
       try {
-        const [studentsResponse, teachersResponse, parentsResponse] = await Promise.all([
-          api.get<ApiUsersResponse | ApiUser[]>("users/students"),
-          api.get<ApiUsersResponse | ApiUser[]>("users/teachers"),
-          api.get<ApiUsersResponse | ApiUser[]>("users/parents"),
-        ]);
+        const response = await api.get<ApiUsersResponse | ApiUser[]>("users", {
+          params: {
+            limit: 100,
+          },
+        });
 
-        const mergedUsers = [
-          ...extractUsers(studentsResponse.data),
-          ...extractUsers(teachersResponse.data),
-          ...extractUsers(parentsResponse.data),
-        ];
+        const mergedUsers = extractUsers(response.data);
 
         const sortedByRecent = [...mergedUsers].sort((a, b) => {
           const first = a.createdAt ? new Date(a.createdAt).getTime() : 0;

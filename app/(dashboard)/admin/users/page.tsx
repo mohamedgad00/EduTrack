@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Eye, Pencil, Search, Trash2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import api from "@/utils/api";
 import { showToast } from "@/utils/toastUtils";
+import { useUsers } from "@/hooks/useUsers";
+import { UserRole, UserResponseDto } from "@/types/user";
 
 type RoleFilter = "all" | "student" | "teacher" | "parent";
 
@@ -24,25 +25,6 @@ interface TableUser {
   dotClass: string;
 }
 
-interface ApiUser {
-  id?: string | number;
-  _id?: string;
-  fullName?: string;
-  name?: string;
-  email?: string;
-  role?: string;
-  isActive?: boolean;
-  status?: string;
-  createdAt?: string;
-}
-
-interface ApiUsersResponse {
-  data?: ApiUser[];
-  users?: ApiUser[];
-  results?: ApiUser[];
-  items?: ApiUser[];
-}
-
 const roleStyles: Record<string, { initClass: string; roleClass: string }> = {
   student: {
     initClass: "bg-blue-100 text-blue-700",
@@ -55,6 +37,10 @@ const roleStyles: Record<string, { initClass: string; roleClass: string }> = {
   parent: {
     initClass: "bg-orange-100 text-orange-700",
     roleClass: "bg-orange-50 text-orange-700",
+  },
+  admin: {
+    initClass: "bg-red-100 text-red-700",
+    roleClass: "bg-red-50 text-red-700",
   },
 };
 
@@ -71,88 +57,6 @@ const roleFilters: Array<{ label: string; value: RoleFilter }> = [
 ];
 
 const PAGE_SIZE = 10;
-
-const roleDeleteEndpoint: Record<Exclude<RoleFilter, "all">, string> = {
-  student: "users/students",
-  teacher: "users/teachers",
-  parent: "users/parents",
-};
-
-const extractUsers = (payload: ApiUsersResponse | ApiUser[]) => {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  const candidateLists = [payload.data, payload.users, payload.results, payload.items];
-
-  for (const candidate of candidateLists) {
-    if (Array.isArray(candidate)) {
-      return candidate;
-    }
-  }
-
-  return [] as ApiUser[];
-};
-
-// Example static users for demonstration purposes
-const exampleUsers: TableUser[] = [
-  {
-    key: "1-ahmed@school.com",
-    userId: "1",
-    initials: "AS",
-    initClass: "bg-blue-100 text-blue-700",
-    name: "Ahmed Saleh",
-    email: "ahmed@school.com",
-    role: "Student",
-    roleClass: "bg-blue-50 text-blue-700",
-    roleSlug: "student",
-    status: "Active",
-    statusClass: "bg-green-50 text-green-700",
-    dotClass: "bg-green-500",
-  },
-  {
-    key: "2-fatima@school.com",
-    userId: "2",
-    initials: "FM",
-    initClass: "bg-purple-100 text-purple-700",
-    name: "Fatima Mohamed",
-    email: "fatima@school.com",
-    role: "Teacher",
-    roleClass: "bg-purple-50 text-purple-700",
-    roleSlug: "teacher",
-    status: "Active",
-    statusClass: "bg-green-50 text-green-700",
-    dotClass: "bg-green-500",
-  },
-  {
-    key: "3-sara@school.com",
-    userId: "3",
-    initials: "SK",
-    initClass: "bg-orange-100 text-orange-700",
-    name: "Sara Khan",
-    email: "sara@school.com",
-    role: "Parent",
-    roleClass: "bg-orange-50 text-orange-700",
-    roleSlug: "parent",
-    status: "Offline",
-    statusClass: "bg-gray-100 text-gray-600",
-    dotClass: "bg-gray-400",
-  },
-  {
-    key: "4-ali@school.com",
-    userId: "4",
-    initials: "AH",
-    initClass: "bg-blue-100 text-blue-700",
-    name: "Ali Hassan",
-    email: "ali@school.com",
-    role: "Student",
-    roleClass: "bg-blue-50 text-blue-700",
-    roleSlug: "student",
-    status: "Active",
-    statusClass: "bg-green-50 text-green-700",
-    dotClass: "bg-green-500",
-  },
-];
 
 const getInitials = (name: string) => {
   const initials = name
@@ -176,21 +80,18 @@ const sanitizeRole = (role: string): RoleFilter => {
   return "all";
 };
 
-// Maps an ApiUser to a TableUser, applying necessary transformations and fallbacks.
-const mapApiUserToTableUser = (user: ApiUser, index: number): TableUser => {
+// Maps a UserResponseDto to a TableUser, applying necessary transformations and fallbacks.
+const mapApiUserToTableUser = (user: UserResponseDto, index: number): TableUser => {
   const roleRaw = (user.role ?? "unknown").toLowerCase();
   const roleSlug = sanitizeRole(roleRaw);
   const roleStyle = roleStyles[roleRaw] ?? fallbackRoleStyle;
-  const name = user.fullName ?? user.name ?? "Unknown User";
+  const name = user.fullName ?? "Unknown User";
   const email = user.email ?? "-";
-  const isActive = user.isActive === true || user.status?.toLowerCase() === "active";
-  const idPart = user.id ?? user._id ?? index;
-  const userId = user.id ?? user._id;
+  const isActive = user.isActive === true;
 
-  // Using a combination of id (or _id) and email to generate a unique key for the table row.
   return {
-    key: `${String(idPart)}-${email}`,
-    userId: userId != null ? String(userId) : null,
+    key: `${user.id}-${email}`,
+    userId: user.id,
     initials: getInitials(name),
     initClass: roleStyle.initClass,
     name,
@@ -209,70 +110,55 @@ export default function UsersPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [users, setUsers] = useState<TableUser[]>(exampleUsers);
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    users,
+    fetchUsersList,
+    deleteUser,
+    isLoadingUsers,
+    isDeleting,
+    deletingUserId,
+    usersError,
+    deleteError,
+    clearDeleteError,
+  } = useUsers();
+
   const [deletingUserKey, setDeletingUserKey] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const activeRoleFilter = sanitizeRole((searchParams.get("role") ?? "all").toLowerCase());
   const searchQuery = searchParams.get("q")?.trim() ?? "";
   const currentPageParam = Number(searchParams.get("page") ?? "1");
 
+  // Map the Redux users to table users
+  const tableUsers = useMemo(() => {
+    return users.map((user, index) => mapApiUserToTableUser(user, index));
+  }, [users]);
+
+  // Load users on mount and when filters change
   useEffect(() => {
-    let isMounted = true;
+    const roleFilter =
+      activeRoleFilter !== "all" ? (activeRoleFilter as UserRole) : undefined;
 
-    const loadUsers = async () => {
-      setIsLoading(true);
-      setError(null);
+    fetchUsersList({
+      role: roleFilter,
+      search: searchQuery || undefined,
+      page: currentPageParam,
+      limit: PAGE_SIZE,
+    });
+  }, [activeRoleFilter, searchQuery, currentPageParam, fetchUsersList]);
 
-      // Fetch all user types in parallel, then merge and sort them by creation date.
-      try {
-        const [studentsResponse, teachersResponse, parentsResponse] = await Promise.all([
-          api.get<ApiUsersResponse | ApiUser[]>("users/students"),
-          api.get<ApiUsersResponse | ApiUser[]>("users/teachers"),
-          api.get<ApiUsersResponse | ApiUser[]>("users/parents"),
-        ]);
+  // Handle delete with error feedback
+  useEffect(() => {
+    if (deleteError) {
+      showToast("error", deleteError);
+      clearDeleteError();
+    }
+  }, [deleteError, clearDeleteError]);
 
-        const mergedUsers = [
-          ...extractUsers(studentsResponse.data),
-          ...extractUsers(teachersResponse.data),
-          ...extractUsers(parentsResponse.data),
-        ];
-
-        const sortedByRecent = [...mergedUsers].sort((a, b) => {
-          const first = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const second = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return second - first;
-        });
-
-        const mappedUsers = sortedByRecent.map((user, index) => mapApiUserToTableUser(user, index));
-
-        if (isMounted) {
-          setUsers(mappedUsers);
-        }
-      } catch {
-        if (isMounted) {
-          setError("Failed to load users.");
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadUsers();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Filtering and pagination logic is memoized to optimize performance, especially for larger user lists.
+  // Filtering and pagination logic is memoized to optimize performance
   const filteredUsers = useMemo(() => {
     const normalizedQuery = searchQuery.toLowerCase();
 
-    return users.filter((user) => {
+    return tableUsers.filter((user) => {
       const matchesRole = activeRoleFilter === "all" || user.roleSlug === activeRoleFilter;
       const matchesSearch =
         normalizedQuery.length === 0 ||
@@ -282,22 +168,21 @@ export default function UsersPage() {
 
       return matchesRole && matchesSearch;
     });
-  }, [activeRoleFilter, searchQuery, users]);
+  }, [activeRoleFilter, searchQuery, tableUsers]);
 
-  // Calculates total pages based on the number of filtered users and the defined page size, ensuring that there is at least one page even if there are no users. It also determines the current page from the URL query parameters, validating it to ensure it falls within the valid range of pages. This allows for robust pagination that responds to user input and URL changes.
+  // Calculate pagination
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
   const currentPage =
     Number.isFinite(currentPageParam) && currentPageParam > 0
       ? Math.min(currentPageParam, totalPages)
       : 1;
 
-  // Calculates the subset of users to display on the current page based on the active filters and pagination settings.
   const paginatedUsers = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
     return filteredUsers.slice(startIndex, startIndex + PAGE_SIZE);
   }, [currentPage, filteredUsers]);
 
-  // Updates the URL query parameters to reflect the selected role filter, resetting the page to 1 to ensure users see the first page of results for the new filter.
+  // Update role filter in URL
   const updateRoleFilter = (role: RoleFilter) => {
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set("role", role);
@@ -305,7 +190,7 @@ export default function UsersPage() {
     router.push(`${pathname}?${nextParams.toString()}`);
   };
 
-  // Updates the URL query parameters to reflect the current search query, ensuring that the page resets to 1 when a new search is performed. This allows users to share URLs with specific search queries and filters applied.
+  // Update search query in URL
   const updateSearchQuery = (value: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
 
@@ -319,7 +204,7 @@ export default function UsersPage() {
     router.push(`${pathname}?${nextParams.toString()}`);
   };
 
-  // Updates the URL query parameters to reflect the selected page, ensuring that the page number stays within valid bounds. This allows users to navigate through pages of results while maintaining the current filters and search query in the URL.
+  // Update page in URL
   const updatePage = (nextPage: number) => {
     const safePage = Math.min(Math.max(1, nextPage), totalPages);
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -327,7 +212,7 @@ export default function UsersPage() {
     router.push(`${pathname}?${nextParams.toString()}`);
   };
 
-  // Handles user deletion with a confirmation prompt and error handling. It first attempts to delete the user via a general endpoint, and if that fails (potentially due to role-specific constraints), it tries the role-specific endpoint. This approach ensures maximum compatibility with different backend implementations while providing feedback to the user.
+  // Handle delete user
   const handleDeleteUser = async (user: TableUser) => {
     if (!user.userId) {
       showToast("error", "User id not found. Cannot delete this record.");
@@ -341,39 +226,16 @@ export default function UsersPage() {
     }
 
     setDeletingUserKey(user.key);
+    deleteUser(user.userId);
+  };
 
-    try {
-      await api.delete(`users/${user.userId}`);
-      setUsers((previousUsers) => previousUsers.filter((item) => item.key !== user.key));
+  // Show success toast when delete is complete
+  useEffect(() => {
+    if (!isDeleting && deletingUserKey && deletingUserId) {
       showToast("success", "User deleted successfully.");
-    } catch (deleteError: unknown) {
-      if (user.roleSlug !== "all") {
-        try {
-          await api.delete(`${roleDeleteEndpoint[user.roleSlug]}/${user.userId}`);
-          setUsers((previousUsers) => previousUsers.filter((item) => item.key !== user.key));
-          showToast("success", "User deleted successfully.");
-          return;
-        } catch {
-          // Fall through to error toast below.
-        }
-      }
-
-      // Attempt to extract a meaningful error message from the API response, with a fallback for unexpected formats.
-      const fallbackMessage = "Failed to delete user. Please try again.";
-      const message =
-        typeof deleteError === "object" &&
-          deleteError !== null &&
-          "response" in deleteError &&
-          typeof (deleteError as { response?: { data?: { message?: unknown } } }).response?.data
-            ?.message === "string"
-          ? (deleteError as { response?: { data?: { message?: string } } }).response?.data?.message
-          : fallbackMessage;
-
-      showToast("error", message ?? fallbackMessage);
-    } finally {
       setDeletingUserKey(null);
     }
-  };
+  }, [isDeleting, deletingUserKey, deletingUserId]);
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
@@ -419,7 +281,7 @@ export default function UsersPage() {
           />
         </div>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {usersError ? <p className="text-sm text-red-600">{usersError}</p> : null}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -437,7 +299,7 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {isLoading ? (
+              {isLoadingUsers ? (
                 <tr>
                   <td colSpan={4} className="py-10 px-2 text-center text-sm text-gray-500">
                     Loading users...
@@ -445,7 +307,7 @@ export default function UsersPage() {
                 </tr>
               ) : null}
 
-              {!isLoading && filteredUsers.length === 0 ? (
+              {!isLoadingUsers && filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-10 px-2 text-center text-sm text-gray-500">
                     No users found for the current filters.
@@ -527,7 +389,7 @@ export default function UsersPage() {
                           type="button"
                           title="Delete user"
                           onClick={() => handleDeleteUser(user)}
-                          disabled={!user.userId || deletingUserKey === user.key}
+                          disabled={!user.userId || deletingUserId === user.userId || isDeleting}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -539,7 +401,7 @@ export default function UsersPage() {
           </table>
         </div>
 
-        {!isLoading && filteredUsers.length > 0 ? (
+        {!isLoadingUsers && filteredUsers.length > 0 ? (
           <div className="flex items-center justify-between gap-3 flex-wrap pt-2">
             <p className="text-sm text-gray-500">
               Showing {(currentPage - 1) * PAGE_SIZE + 1}

@@ -17,7 +17,8 @@ import { useForm, useWatch } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { z } from "zod";
 import { AppDispatch, RootState } from "@/redux/store";
-import { clearCreateUserState, createUser } from "@/redux/features/users/usersSlice";
+import { clearCreateUserError, createUser } from "@/redux/features/users/usersSlice";
+import { UserRole, CreateUserDto } from "@/types/user";
 import { showToast } from "@/utils/toastUtils";
 
 type Role = "student" | "teacher" | "parent";
@@ -166,7 +167,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
 
   const closeModal = () => {
     reset(defaultValues);
-    dispatch(clearCreateUserState());
+    dispatch(clearCreateUserError());
     onClose();
   };
 
@@ -184,27 +185,27 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
   const onSubmit = async (data: FormValues) => {
     if (!data.role) return;
 
-    const payload = {
-      role: data.role,
+    const payload: Partial<CreateUserDto> & { role: UserRole } = {
+      role: data.role as UserRole,
       fullName: data.fullName,
       email: data.email,
       phone: data.phone,
       gender: data.gender,
-      date_of_birth: data.date_of_birth,
+      dateOfBirth: data.date_of_birth,
       username: data.username,
       password: data.password,
       ...(data.role === "student"
         ? {
           level: data.level,
           classSection: data.classSection,
-          parent_id: data.parent_id,
+          parentId: data.parent_id,
           enrollmentDate: data.enrollmentDate,
         }
         : {}),
       ...(data.role === "teacher"
         ? {
           specialty: data.specialty,
-          experience: data.experience,
+          experience: data.experience ? Number(data.experience) : undefined,
           hireDate: data.hireDate,
         }
         : {}),
@@ -215,11 +216,12 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
         : {}),
     };
 
-    dispatch(clearCreateUserState());
-    const action = await dispatch(createUser(payload));
+    dispatch(clearCreateUserError());
+    const action = await dispatch(createUser(payload as CreateUserDto));
     if (createUser.fulfilled.match(action)) {
       showToast("success", "User created successfully.");
       reset(defaultValues);
+      closeModal();
       return;
     }
 
@@ -387,7 +389,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                           <label className="mb-2 block text-sm font-medium text-gray-700">
                             Level <span className="text-red-500">*</span>
                           </label>
-                          <select {...register("level")} className={inputClass(Boolean(errors.level ))}>
+                          <select {...register("level")} className={inputClass(Boolean(errors.level))}>
                             <option value="">Select Level</option>
                             <option value="1">Level 1</option>
                             <option value="2">Level 2</option>
