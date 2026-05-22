@@ -7,9 +7,18 @@ import { z } from "zod";
 import { useDispatch, useSelector } from "react-redux";
 import { useState, useEffect } from "react";
 import { AppDispatch, RootState } from "@/redux/store";
-import { createCourseSuccess, updateCourseSuccess, clearCourseState } from "@/redux/features/courses/coursesSlice";
+import {
+  createCourseStart,
+  createCourseSuccess,
+  createCourseError,
+  updateCourseStart,
+  updateCourseSuccess,
+  updateCourseError,
+  clearCourseState,
+} from "@/redux/features/courses/coursesSlice";
 import { showToast } from "@/utils/toastUtils";
 import { Course } from "@/types/course";
+import { courseApi } from "@/utils/courseApi";
 
 const formSchema = z.object({
   name: z.string().min(1, "Course name is required"),
@@ -113,60 +122,110 @@ export default function AddCourseModal({
     });
   };
 
+  const buildCourseFromPayload = (
+    baseCourse: Course | null,
+    data: FormValues,
+    createdOrUpdatedCourse?: Course,
+  ): Course => {
+    const teacherName =
+      teachers.find((teacher) => teacher.id === data.teacherId)?.name ||
+      createdOrUpdatedCourse?.teacherName ||
+      baseCourse?.teacherName ||
+      "";
+
+    return {
+      id: createdOrUpdatedCourse?.id || baseCourse?.id || crypto.randomUUID(),
+      name: createdOrUpdatedCourse?.name || data.name,
+      level: createdOrUpdatedCourse?.level || data.level,
+      class: createdOrUpdatedCourse?.class || data.class,
+      description: createdOrUpdatedCourse?.description || data.description,
+      teacherId: createdOrUpdatedCourse?.teacherId || data.teacherId,
+      teacherName,
+      studentIds: createdOrUpdatedCourse?.studentIds || data.studentIds,
+      students: createdOrUpdatedCourse?.students || toAssignedStudents(data.studentIds),
+      createdAt: createdOrUpdatedCourse?.createdAt || baseCourse?.createdAt || new Date().toISOString(),
+      updatedAt: createdOrUpdatedCourse?.updatedAt || new Date().toISOString(),
+      quizzes: createdOrUpdatedCourse?.quizzes || baseCourse?.quizzes || [],
+      homeworks: createdOrUpdatedCourse?.homeworks || baseCourse?.homeworks || [],
+      midtermExam: createdOrUpdatedCourse?.midtermExam ?? baseCourse?.midtermExam ?? null,
+      finalExam: createdOrUpdatedCourse?.finalExam ?? baseCourse?.finalExam ?? null,
+      attendance: createdOrUpdatedCourse?.attendance || baseCourse?.attendance || [],
+    };
+  };
+
   const onSubmit = async (data: FormValues) => {
     try {
       if (courseToEdit) {
-        // Update existing course
-        dispatch(updateCourseSuccess({
-          ...courseToEdit,
-          ...data,
-          studentIds: data.studentIds,
-          students: toAssignedStudents(data.studentIds),
-          quizzes: courseToEdit.quizzes.map((quiz) => ({
-            ...quiz,
-            studentRecords: syncAssessmentStudents(data.studentIds, quiz.studentRecords),
-          })),
-          homeworks: courseToEdit.homeworks.map((hw) => ({
-            ...hw,
-            studentRecords: syncAssessmentStudents(data.studentIds, hw.studentRecords),
-          })),
-          midtermExam: courseToEdit.midtermExam
-            ? {
-              ...courseToEdit.midtermExam,
-              studentRecords: syncAssessmentStudents(data.studentIds, courseToEdit.midtermExam.studentRecords),
-            }
-            : null,
-          finalExam: courseToEdit.finalExam
-            ? {
-              ...courseToEdit.finalExam,
-              studentRecords: syncAssessmentStudents(data.studentIds, courseToEdit.finalExam.studentRecords),
-            }
-            : null,
-          updatedAt: new Date().toISOString(),
-        }));
+        dispatch(updateCourseStart());
+
+        const updatedCourseFromApi = await courseApi.updateCourse(courseToEdit.id, data);
+        const updatedCourse = buildCourseFromPayload(courseToEdit, data, {
+          ...updatedCourseFromApi,
+          studentIds:
+            updatedCourseFromApi.studentIds.length > 0 ? updatedCourseFromApi.studentIds : data.studentIds,
+          students:
+            updatedCourseFromApi.students.length > 0 ? updatedCourseFromApi.students : toAssignedStudents(data.studentIds),
+          quizzes:
+            updatedCourseFromApi.quizzes.length > 0
+              ? updatedCourseFromApi.quizzes
+              : courseToEdit.quizzes.map((quiz) => ({
+                ...quiz,
+                studentRecords: syncAssessmentStudents(data.studentIds, quiz.studentRecords),
+              })),
+          homeworks:
+            updatedCourseFromApi.homeworks.length > 0
+              ? updatedCourseFromApi.homeworks
+              : courseToEdit.homeworks.map((hw) => ({
+                ...hw,
+                studentRecords: syncAssessmentStudents(data.studentIds, hw.studentRecords),
+              })),
+          midtermExam:
+            updatedCourseFromApi.midtermExam ??
+            (courseToEdit.midtermExam
+              ? {
+                ...courseToEdit.midtermExam,
+                studentRecords: syncAssessmentStudents(data.studentIds, courseToEdit.midtermExam.studentRecords),
+              }
+              : null),
+          finalExam:
+            updatedCourseFromApi.finalExam ??
+            (courseToEdit.finalExam
+              ? {
+                ...courseToEdit.finalExam,
+                studentRecords: syncAssessmentStudents(data.studentIds, courseToEdit.finalExam.studentRecords),
+              }
+              : null),
+          attendance:
+            updatedCourseFromApi.attendance.length > 0 ? updatedCourseFromApi.attendance : courseToEdit.attendance,
+        });
+
+        dispatch(updateCourseSuccess(updatedCourse));
         showToast("success", "Course updated successfully!");
       } else {
-        // Create new course
-        const newCourse: Course = {
-          id: crypto.randomUUID(),
-          ...data,
-          studentIds: data.studentIds,
-          students: toAssignedStudents(data.studentIds),
-          teacherName: teachers.find((t) => t.id === data.teacherId)?.name || "",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          quizzes: [],
-          homeworks: [],
-          midtermExam: null,
-          finalExam: null,
-          attendance: [],
-        };
+        dispatch(createCourseStart());
+
+        const createdCourseFromApi = await courseApi.createCourse(data);
+        const newCourse = buildCourseFromPayload(null, data, {
+          ...createdCourseFromApi,
+          studentIds:
+            createdCourseFromApi.studentIds.length > 0 ? createdCourseFromApi.studentIds : data.studentIds,
+          students:
+            createdCourseFromApi.students.length > 0 ? createdCourseFromApi.students : toAssignedStudents(data.studentIds),
+          teacherName:
+            createdCourseFromApi.teacherName || teachers.find((t) => t.id === data.teacherId)?.name || "",
+        });
+
         dispatch(createCourseSuccess(newCourse));
         showToast("success", "Course created successfully!");
       }
       handleClose();
     } catch (error) {
       console.error("Error saving course:", error);
+      if (courseToEdit) {
+        dispatch(updateCourseError(error instanceof Error ? error.message : "Failed to update course"));
+      } else {
+        dispatch(createCourseError(error instanceof Error ? error.message : "Failed to create course"));
+      }
       showToast("error", "Failed to save course");
     }
   };

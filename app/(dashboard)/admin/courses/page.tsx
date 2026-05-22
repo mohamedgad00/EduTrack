@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/redux/store";
-import { updateCourseSuccess, deleteCourseSuccess } from "@/redux/features/courses/coursesSlice";
+import {
+  deleteCourseStart,
+  deleteCourseSuccess,
+  deleteCourseError,
+  setCoursesLoading,
+  setCoursesSuccess,
+  setCoursesError,
+  updateCourseSuccess,
+} from "@/redux/features/courses/coursesSlice";
 import { Course, StudentAttendance } from "@/types/course";
 import AddCourseModal from "@/components/modals/AddCourseModal";
 import GradeModal from "@/components/modals/GradeModal";
@@ -12,10 +20,13 @@ import AttendanceModal from "@/components/modals/AttendanceModal";
 import { showToast } from "@/utils/toastUtils";
 import { Edit, Trash2, BookOpen, Users, BarChart3, CalendarDays, Plus } from "lucide-react";
 import Swal from "sweetalert2";
+import { courseApi } from "@/utils/courseApi";
+import { userApi } from "@/utils/userApi";
+import { UserResponseDto } from "@/types/user";
 
 export default function CoursesPage() {
   const dispatch = useDispatch<AppDispatch>();
-  const { courses } = useSelector((state: RootState) => state.courses);
+  const { courses, loading } = useSelector((state: RootState) => state.courses);
   const router = useRouter();
 
   const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false);
@@ -23,27 +34,52 @@ export default function CoursesPage() {
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
+  const [teachers, setTeachers] = useState<Array<{ id: string; name: string }>>([]);
+  const [students, setStudents] = useState<Array<{ id: string; name: string }>>([]);
 
-  // Mock data for teachers and students
-  const teachers = [
-    { id: "t1", name: "Mr. Ahmed Hassan" },
-    { id: "t2", name: "Mrs. Fatima Ali" },
-    { id: "t3", name: "Dr. Mohamed Ibrahim" },
-    { id: "t4", name: "Miss Layla Mahmoud" },
-  ];
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        dispatch(setCoursesLoading());
+        const courseList = await courseApi.getCourses();
+        dispatch(setCoursesSuccess(courseList));
+      } catch (error) {
+        console.error("Error loading courses:", error);
+        dispatch(setCoursesError(error instanceof Error ? error.message : "Failed to load courses"));
+      }
+    };
 
-  const students = [
-    { id: "s1", name: "Ali Ahmed" },
-    { id: "s2", name: "Fatima Hassan" },
-    { id: "s3", name: "Omar Ibrahim" },
-    { id: "s4", name: "Noor Mohamed" },
-    { id: "s5", name: "Zainab Ali" },
-    { id: "s6", name: "Karim Khalil" },
-    { id: "s7", name: "Layla Youssef" },
-    { id: "s8", name: "Hassan Saleh" },
-    { id: "s9", name: "Mona Adel" },
-    { id: "s10", name: "Youssef Farah" },
-  ];
+    void loadCourses();
+  }, [dispatch]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const [teachersResponse, studentsResponse] = await Promise.all([
+          userApi.getTeachers(undefined, 1, 200),
+          userApi.getStudents(undefined, 1, 200),
+        ]);
+
+        setTeachers(
+          teachersResponse.data.map((teacher: UserResponseDto) => ({
+            id: teacher.id,
+            name: teacher.fullName,
+          })),
+        );
+        setStudents(
+          studentsResponse.data.map((student: UserResponseDto) => ({
+            id: student.id,
+            name: student.fullName,
+          })),
+        );
+      } catch (error) {
+        console.error("Error loading users:", error);
+        showToast("error", "Failed to load teachers and students");
+      }
+    };
+
+    void loadUsers();
+  }, []);
 
   const handleAddCourse = () => {
     setCourseToEdit(null);
@@ -72,8 +108,16 @@ export default function CoursesPage() {
       return;
     }
 
-    dispatch(deleteCourseSuccess(courseId));
-    showToast("success", "Course deleted successfully");
+    try {
+      dispatch(deleteCourseStart());
+      await courseApi.deleteCourse(courseId);
+      dispatch(deleteCourseSuccess(courseId));
+      showToast("success", "Course deleted successfully");
+    } catch (error) {
+      console.error("Error deleting course:", error);
+      dispatch(deleteCourseError(error instanceof Error ? error.message : "Failed to delete course"));
+      showToast("error", "Failed to delete course");
+    }
   };
 
   const handleViewGrades = (course: Course) => {
@@ -126,7 +170,11 @@ export default function CoursesPage() {
       </div>
 
       {/* Courses Grid */}
-      {courses.length > 0 ? (
+      {loading && courses.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <p className="text-gray-600">Loading courses...</p>
+        </div>
+      ) : courses.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course) => (
             <div
