@@ -34,13 +34,13 @@ const initialState: AuthState = {
 };
 
 interface LoginResponse {
-  success?: boolean;
-  message?: string;
   user?: User;
+  access_token?: string;
   accessToken?: string;
   token?: string;
   data?: {
     user?: User;
+    access_token?: string;
     accessToken?: string;
     token?: string;
   };
@@ -65,7 +65,8 @@ export const loginUser = createAsyncThunk(
 
       const payload = response.data?.data ?? response.data;
       const user = payload?.user ?? null;
-      const token = payload?.accessToken ?? payload?.token;
+      const token =
+        payload?.access_token ?? payload?.accessToken ?? payload?.token;
 
       if (!token) {
         return rejectWithValue("Login failed. Token not found in response.");
@@ -85,7 +86,6 @@ export const logoutUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       Cookies.remove("token", { path: "/" });
-      Cookies.remove("admin_auth", { path: "/" });
     } catch (error) {
       console.log("Logout error:", error);
       return rejectWithValue("Logout failed.");
