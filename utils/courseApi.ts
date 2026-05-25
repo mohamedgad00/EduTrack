@@ -216,6 +216,13 @@ export const courseApi = {
     return normalizeAssessment(assessmentPayload);
   },
 
+  async deleteCourseAssessment(
+    courseId: string,
+    assessmentId: string,
+  ): Promise<void> {
+    await api.delete(`/courses/${courseId}/assessments/${assessmentId}`);
+  },
+
   async deleteCourse(courseId: string): Promise<void> {
     await api.delete(`/courses/${courseId}`);
   },

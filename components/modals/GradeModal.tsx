@@ -230,14 +230,61 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
     });
   };
 
-  const deleteAssessment = (listKey: "quizzes" | "homeworks", assessmentId: string) => {
-    setDraftCourse((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        [listKey]: prev[listKey].filter((assessment) => assessment.id !== assessmentId),
-      };
-    });
+  const deletePersistedAssessment = async (
+    assessment: CourseAssessment | null,
+    listKey: "quizzes" | "homeworks" | "midtermExam" | "finalExam",
+  ) => {
+    if (!assessment) return;
+    if (!course || !draftCourse) return;
+
+    try {
+      const existingIds = new Set([
+        ...course.quizzes.map((item) => item.id),
+        ...course.homeworks.map((item) => item.id),
+        ...(course.midtermExam ? [course.midtermExam.id] : []),
+        ...(course.finalExam ? [course.finalExam.id] : []),
+      ]);
+
+      const isPersisted = existingIds.has(assessment.id);
+
+      if (isPersisted) {
+        await courseApi.deleteCourseAssessment(course.id, assessment.id);
+      }
+
+      setDraftCourse((prev) => {
+        if (!prev) return prev;
+
+        if (listKey === "midtermExam" || listKey === "finalExam") {
+          return {
+            ...prev,
+            [listKey]: null,
+          };
+        }
+
+        return {
+          ...prev,
+          [listKey]: prev[listKey].filter((item) => item.id !== assessment.id),
+        };
+      });
+    } catch (err) {
+      console.error("Error deleting assessment:", err);
+      let serverMessage = String(err);
+      if (typeof err === "object" && err !== null) {
+        const maybe = err as { response?: unknown; message?: unknown };
+        if (maybe.response && typeof maybe.response === "object") {
+          const respObj = maybe.response as Record<string, unknown>;
+          const resp = respObj.data ?? respObj;
+          if (resp && typeof resp === "object" && "message" in (resp as Record<string, unknown>)) {
+            serverMessage = String((resp as Record<string, unknown>).message as unknown);
+          } else {
+            serverMessage = String(resp ?? serverMessage);
+          }
+        } else if (maybe.message) {
+          serverMessage = String(maybe.message);
+        }
+      }
+      showToast("error", `Failed to delete assessment: ${serverMessage}`);
+    }
   };
 
   const updateStudentRecord = (
@@ -551,7 +598,10 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
                     assessment,
                     (updater) =>
                       updateListAssessment(activeTab === "quiz" ? "quizzes" : "homeworks", assessment.id, updater),
-                    () => deleteAssessment(activeTab === "quiz" ? "quizzes" : "homeworks", assessment.id)
+                    () => deletePersistedAssessment(
+                      assessment,
+                      activeTab === "quiz" ? "quizzes" : "homeworks"
+                    )
                   )
                 )
               )}
@@ -573,8 +623,10 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
                   </button>
                 </div>
               ) : (
-                renderAssessmentEditor(draftCourse.midtermExam, (updater) =>
-                  updateSingleAssessment("midtermExam", updater)
+                renderAssessmentEditor(
+                  draftCourse.midtermExam,
+                  (updater) => updateSingleAssessment("midtermExam", updater),
+                  () => deletePersistedAssessment(draftCourse.midtermExam, "midtermExam")
                 )
               )}
             </div>
@@ -595,8 +647,10 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
                   </button>
                 </div>
               ) : (
-                renderAssessmentEditor(draftCourse.finalExam, (updater) =>
-                  updateSingleAssessment("finalExam", updater)
+                renderAssessmentEditor(
+                  draftCourse.finalExam,
+                  (updater) => updateSingleAssessment("finalExam", updater),
+                  () => deletePersistedAssessment(draftCourse.finalExam, "finalExam")
                 )
               )}
             </div>
