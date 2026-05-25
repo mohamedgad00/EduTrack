@@ -384,10 +384,11 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
         ...(course.finalExam ? [course.finalExam.id] : []),
       ]);
 
-      const createdAssessments = new Map<string, CourseAssessment>();
+      const changedAssessments = new Map<string, CourseAssessment>();
 
       const createAssessments = async (assessments: CourseAssessment[]) => {
         const newAssessments = assessments.filter((assessment) => !originalAssessmentIds.has(assessment.id));
+        if (newAssessments.length === 0) return;
 
         const created = await Promise.all(
           newAssessments.map(async (assessment) => {
@@ -397,30 +398,55 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
         );
 
         newAssessments.forEach((assessment, index) => {
-          createdAssessments.set(assessment.id, created[index]);
+          changedAssessments.set(assessment.id, created[index]);
         });
       };
 
-      await createAssessments(draftCourse.quizzes);
-      await createAssessments(draftCourse.homeworks);
+      const updateAssessments = async (assessments: CourseAssessment[]) => {
+        const existing = assessments.filter((assessment) => originalAssessmentIds.has(assessment.id));
+        if (existing.length === 0) return;
 
+        const updated = await Promise.all(
+          existing.map(async (assessment) => {
+            const response = await courseApi.updateCourseAssessment(course.id, assessment.id, toAssessmentPayload(assessment));
+            return hydrateStudentNames(response, draftCourse.students);
+          }),
+        );
+
+        existing.forEach((assessment, index) => {
+          changedAssessments.set(assessment.id, updated[index]);
+        });
+      };
+
+      // Quizzes
+      await createAssessments(draftCourse.quizzes);
+      await updateAssessments(draftCourse.quizzes);
+
+      // Homeworks
+      await createAssessments(draftCourse.homeworks);
+      await updateAssessments(draftCourse.homeworks);
+
+      // Midterm
       if (draftCourse.midtermExam) {
         await createAssessments([draftCourse.midtermExam]);
+        await updateAssessments([draftCourse.midtermExam]);
       }
 
+      // Final
       if (draftCourse.finalExam) {
         await createAssessments([draftCourse.finalExam]);
+        await updateAssessments([draftCourse.finalExam]);
       }
 
       onSaveCourse({
         ...draftCourse,
-        quizzes: draftCourse.quizzes.map((assessment) => createdAssessments.get(assessment.id) ?? assessment),
-        homeworks: draftCourse.homeworks.map((assessment) => createdAssessments.get(assessment.id) ?? assessment),
+        quizzes: draftCourse.quizzes.map((assessment) => changedAssessments.get(assessment.id) ?? assessment),
+        homeworks: draftCourse.homeworks.map((assessment) => changedAssessments.get(assessment.id) ?? assessment),
         midtermExam: draftCourse.midtermExam
-          ? createdAssessments.get(draftCourse.midtermExam.id) ?? draftCourse.midtermExam
+          ? changedAssessments.get(draftCourse.midtermExam.id) ?? draftCourse.midtermExam
           : null,
         finalExam: draftCourse.finalExam
-          ? createdAssessments.get(draftCourse.finalExam.id) ?? draftCourse.finalExam
+          ? changedAssessments.get(draftCourse.finalExam.id) ?? draftCourse.finalExam
           : null,
         updatedAt: new Date().toISOString(),
       });

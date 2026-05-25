@@ -197,6 +197,25 @@ export const courseApi = {
     return normalizeAssessment(assessmentPayload);
   },
 
+  async updateCourseAssessment(
+    courseId: string,
+    assessmentId: string,
+    payload: Partial<CreateCourseAssessmentPayload>,
+  ): Promise<CourseAssessment> {
+    const response = await api.patch<
+      ApiResponse<CourseAssessment> | CourseAssessment
+    >(`/courses/${courseId}/assessments/${assessmentId}`, payload);
+
+    const responseData = response.data;
+    const assessmentPayload =
+      isRecord(responseData) && "data" in responseData
+        ? (responseData.data as Partial<CourseAssessment> &
+            Record<string, unknown>)
+        : (responseData as Partial<CourseAssessment> & Record<string, unknown>);
+
+    return normalizeAssessment(assessmentPayload);
+  },
+
   async deleteCourse(courseId: string): Promise<void> {
     await api.delete(`/courses/${courseId}`);
   },
