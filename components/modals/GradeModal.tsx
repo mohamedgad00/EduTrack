@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Course, CourseAssessment, StudentAssessmentRecord } from "@/types/course";
+import {
+  Course,
+  CourseAssessment,
+  CreateCourseAssessmentPayload,
+  StudentAssessmentRecord,
+} from "@/types/course";
 import { Plus, Trash2, X } from "lucide-react";
+import { courseApi } from "@/utils/courseApi";
+import { showToast } from "@/utils/toastUtils";
 
 type AssessmentTab = "quiz" | "homework" | "midterm" | "final";
 
@@ -74,13 +81,40 @@ const getAllGrades = (course: Course) => {
   );
 };
 
+const toAssessmentPayload = (assessment: CourseAssessment): CreateCourseAssessmentPayload => ({
+  type: assessment.type,
+  name: assessment.name,
+  date: assessment.date,
+  maxGrade: assessment.maxGrade,
+  studentRecords: assessment.studentRecords.map((record) => ({
+    studentId: record.studentId,
+    grade: record.grade,
+    isPresent: record.isPresent,
+  })),
+});
+
+const hydrateStudentNames = (
+  assessment: CourseAssessment,
+  students: Course["students"],
+): CourseAssessment => {
+  const studentNameById = new Map(students.map((student) => [student.id, student.name]));
+
+  return {
+    ...assessment,
+    studentRecords: assessment.studentRecords.map((record) => ({
+      ...record,
+      studentName: record.studentName || studentNameById.get(record.studentId) || "",
+    })),
+  };
+};
+
 export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: GradeModalProps) {
   const [draftCourse, setDraftCourse] = useState<Course | null>(null);
   const [activeTab, setActiveTab] = useState<AssessmentTab>("quiz");
 
   useEffect(() => {
     if (course) {
-      setDraftCourse({
+      const next = {
         ...course,
         quizzes: (course.quizzes || []).map((quiz, idx) => ({
           ...quiz,
@@ -118,10 +152,15 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
             studentRecords: buildStudentRecords(course.students, course.finalExam.studentRecords),
           }
           : null,
-      });
-      setActiveTab("quiz");
+      } as Course;
+
+      // defer both state updates to next tick to avoid synchronous setState in effect
+      setTimeout(() => {
+        setDraftCourse(next);
+        setActiveTab("quiz");
+      }, 0);
     } else {
-      setDraftCourse(null);
+      setTimeout(() => setDraftCourse(null), 0);
     }
   }, [course]);
 
@@ -334,10 +373,77 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
     </div>
   );
 
-  const handleSave = () => {
-    if (!draftCourse) return;
-    onSaveCourse({ ...draftCourse, updatedAt: new Date().toISOString() });
-    onClose();
+  const handleSave = async () => {
+    if (!draftCourse || !course) return;
+
+    try {
+      const originalAssessmentIds = new Set([
+        ...course.quizzes.map((assessment) => assessment.id),
+        ...course.homeworks.map((assessment) => assessment.id),
+        ...(course.midtermExam ? [course.midtermExam.id] : []),
+        ...(course.finalExam ? [course.finalExam.id] : []),
+      ]);
+
+      const createdAssessments = new Map<string, CourseAssessment>();
+
+      const createAssessments = async (assessments: CourseAssessment[]) => {
+        const newAssessments = assessments.filter((assessment) => !originalAssessmentIds.has(assessment.id));
+
+        const created = await Promise.all(
+          newAssessments.map(async (assessment) => {
+            const response = await courseApi.createCourseAssessment(course.id, toAssessmentPayload(assessment));
+            return hydrateStudentNames(response, draftCourse.students);
+          }),
+        );
+
+        newAssessments.forEach((assessment, index) => {
+          createdAssessments.set(assessment.id, created[index]);
+        });
+      };
+
+      await createAssessments(draftCourse.quizzes);
+      await createAssessments(draftCourse.homeworks);
+
+      if (draftCourse.midtermExam) {
+        await createAssessments([draftCourse.midtermExam]);
+      }
+
+      if (draftCourse.finalExam) {
+        await createAssessments([draftCourse.finalExam]);
+      }
+
+      onSaveCourse({
+        ...draftCourse,
+        quizzes: draftCourse.quizzes.map((assessment) => createdAssessments.get(assessment.id) ?? assessment),
+        homeworks: draftCourse.homeworks.map((assessment) => createdAssessments.get(assessment.id) ?? assessment),
+        midtermExam: draftCourse.midtermExam
+          ? createdAssessments.get(draftCourse.midtermExam.id) ?? draftCourse.midtermExam
+          : null,
+        finalExam: draftCourse.finalExam
+          ? createdAssessments.get(draftCourse.finalExam.id) ?? draftCourse.finalExam
+          : null,
+        updatedAt: new Date().toISOString(),
+      });
+      onClose();
+    } catch (err) {
+      console.error("Error saving assessments:", err);
+      let serverMessage = String(err);
+      if (typeof err === "object" && err !== null) {
+        const maybe = err as { response?: unknown; message?: unknown };
+        if (maybe.response && typeof maybe.response === "object") {
+          const respObj = maybe.response as Record<string, unknown>;
+          const resp = respObj.data ?? respObj;
+          if (resp && typeof resp === "object" && "message" in (resp as Record<string, unknown>)) {
+            serverMessage = String((resp as Record<string, unknown>).message as unknown);
+          } else {
+            serverMessage = String(resp ?? serverMessage);
+          }
+        } else if (maybe.message) {
+          serverMessage = String(maybe.message);
+        }
+      }
+      showToast("error", `Failed to save assessments: ${serverMessage}`);
+    }
   };
 
   if (!isOpen || !draftCourse) return null;
@@ -369,11 +475,10 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  activeTab === tab
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                }`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${activeTab === tab
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
               >
                 {TAB_LABELS[tab]}
               </button>

@@ -9,6 +9,20 @@ export interface StudentAssessmentRecord {
   isPresent: boolean;
 }
 
+export interface CreateStudentAssessmentRecordPayload {
+  studentId: string;
+  grade?: number;
+  isPresent: boolean;
+}
+
+export interface CreateCourseAssessmentPayload {
+  type: AssessmentType;
+  name: string;
+  date: string;
+  maxGrade: number;
+  studentRecords: CreateStudentAssessmentRecordPayload[];
+}
+
 export interface CourseAssessment {
   id: string;
   type: AssessmentType;

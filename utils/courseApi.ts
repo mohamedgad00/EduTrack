@@ -1,5 +1,11 @@
 import api from "./api";
-import { Course, CreateCoursePayload } from "@/types/course";
+import {
+  Course,
+  CourseAssessment,
+  CreateCourseAssessmentPayload,
+  CreateCoursePayload,
+  StudentAssessmentRecord,
+} from "@/types/course";
 import { ApiResponse } from "@/types/user";
 
 type CourseApiEnvelope<T> = ApiResponse<T> | T;
@@ -101,6 +107,45 @@ function normalizeCourseList(payload: unknown): Course[] {
   return [];
 }
 
+function normalizeStudentAssessmentRecord(
+  record: Partial<StudentAssessmentRecord> & Record<string, unknown>,
+): StudentAssessmentRecord {
+  return {
+    studentId: String(record.studentId ?? ""),
+    studentName: String(record.studentName ?? ""),
+    grade:
+      typeof record.grade === "number"
+        ? record.grade
+        : typeof record.grade === "string" && record.grade !== ""
+          ? Number(record.grade)
+          : undefined,
+    isPresent: typeof record.isPresent === "boolean" ? record.isPresent : true,
+  };
+}
+
+function normalizeAssessment(
+  assessment: Partial<CourseAssessment> & Record<string, unknown>,
+): CourseAssessment {
+  return {
+    id: String(assessment.id ?? ""),
+    type: assessment.type as CourseAssessment["type"],
+    name: String(assessment.name ?? ""),
+    date: String(assessment.date ?? new Date().toISOString().slice(0, 10)),
+    maxGrade:
+      typeof assessment.maxGrade === "number"
+        ? assessment.maxGrade
+        : Number(assessment.maxGrade ?? 0),
+    studentRecords: Array.isArray(assessment.studentRecords)
+      ? assessment.studentRecords.map((record) =>
+          normalizeStudentAssessmentRecord(
+            record as Partial<StudentAssessmentRecord> &
+              Record<string, unknown>,
+          ),
+        )
+      : [],
+  };
+}
+
 export const courseApi = {
   async getCourses(teacherId?: string): Promise<Course[]> {
     const response = await api.get<
@@ -132,6 +177,24 @@ export const courseApi = {
     return normalizeCourse(
       unwrapData(response.data) as Partial<Course> & Record<string, unknown>,
     );
+  },
+
+  async createCourseAssessment(
+    courseId: string,
+    payload: CreateCourseAssessmentPayload,
+  ): Promise<CourseAssessment> {
+    const response = await api.post<
+      ApiResponse<CourseAssessment> | CourseAssessment
+    >(`/courses/${courseId}/assessments`, payload);
+
+    const responseData = response.data;
+    const assessmentPayload =
+      isRecord(responseData) && "data" in responseData
+        ? (responseData.data as Partial<CourseAssessment> &
+            Record<string, unknown>)
+        : (responseData as Partial<CourseAssessment> & Record<string, unknown>);
+
+    return normalizeAssessment(assessmentPayload);
   },
 
   async deleteCourse(courseId: string): Promise<void> {
