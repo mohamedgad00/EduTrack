@@ -434,6 +434,8 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
       ]);
 
       const changedAssessments = new Map<string, CourseAssessment>();
+      let createdCount = 0;
+      let updatedCount = 0;
 
       const createAssessments = async (assessments: CourseAssessment[]) => {
         const newAssessments = assessments.filter((assessment) => !originalAssessmentIds.has(assessment.id));
@@ -449,6 +451,8 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
         newAssessments.forEach((assessment, index) => {
           changedAssessments.set(assessment.id, created[index]);
         });
+
+        createdCount += newAssessments.length;
       };
 
       const updateAssessments = async (assessments: CourseAssessment[]) => {
@@ -465,6 +469,8 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
         existing.forEach((assessment, index) => {
           changedAssessments.set(assessment.id, updated[index]);
         });
+
+        updatedCount += existing.length;
       };
 
       // Quizzes
@@ -499,6 +505,15 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
           : null,
         updatedAt: new Date().toISOString(),
       });
+
+      if (createdCount > 0 && updatedCount > 0) {
+        showToast("success", "Assessments saved successfully");
+      } else if (createdCount > 0) {
+        showToast("success", createdCount === 1 ? "Assessment created successfully" : "Assessments created successfully");
+      } else {
+        showToast("success", updatedCount === 1 ? "Assessment updated successfully" : "Assessments updated successfully");
+      }
+
       onClose();
     } catch (err) {
       console.error("Error saving assessments:", err);
