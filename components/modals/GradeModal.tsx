@@ -266,6 +266,8 @@ export default function GradeModal({ isOpen, onClose, course, onSaveCourse }: Gr
           [listKey]: prev[listKey].filter((item) => item.id !== assessment.id),
         };
       });
+
+      showToast("success", "Assessment deleted successfully");
     } catch (err) {
       console.error("Error deleting assessment:", err);
       let serverMessage = String(err);
