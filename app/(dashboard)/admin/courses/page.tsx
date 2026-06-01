@@ -136,12 +136,27 @@ export default function CoursesPage() {
     showToast("success", "Assessments saved successfully");
   };
 
-  const handleSaveAttendance = (attendance: StudentAttendance[]) => {
-    if (selectedCourse) {
+  const handleSaveAttendance = async (attendance: StudentAttendance[]) => {
+    if (!selectedCourse) {
+      return;
+    }
+
+    try {
+      await courseApi.updateCourseAttendance(selectedCourse.id, {
+        items: attendance.map((student) => ({
+          studentId: student.studentId,
+          attendance: student.attendance,
+        })),
+      });
+
       const updatedCourse = { ...selectedCourse, attendance };
       dispatch(updateCourseSuccess(updatedCourse));
       setSelectedCourse(updatedCourse);
       showToast("success", "Attendance saved successfully");
+    } catch (error) {
+      console.error("Error saving attendance:", error);
+      showToast("error", "Failed to save attendance");
+      throw error;
     }
   };
 

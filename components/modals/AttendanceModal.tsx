@@ -8,7 +8,7 @@ interface AttendanceModalProps {
   isOpen: boolean;
   onClose: () => void;
   course: Course | null;
-  onSaveAttendance: (attendance: StudentAttendance[]) => void;
+  onSaveAttendance: (attendance: StudentAttendance[]) => void | Promise<void>;
 }
 
 export default function AttendanceModal({
@@ -163,9 +163,13 @@ export default function AttendanceModal({
     );
   };
 
-  const handleSave = () => {
-    onSaveAttendance(attendance);
-    onClose();
+  const handleSave = async () => {
+    try {
+      await onSaveAttendance(attendance);
+      onClose();
+    } catch (error) {
+      console.error("Error saving attendance from modal:", error);
+    }
   };
 
   if (!isOpen || !course) return null;

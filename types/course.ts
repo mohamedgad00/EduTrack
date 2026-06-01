@@ -51,6 +51,15 @@ export interface StudentAttendance {
   attendancePercentage: number;
 }
 
+export interface UpdateCourseAttendanceItemPayload {
+  studentId: string;
+  attendance: Record<string, AttendanceStatus>;
+}
+
+export interface UpdateCourseAttendancePayload {
+  items: UpdateCourseAttendanceItemPayload[];
+}
+
 export interface Course {
   id: string;
   name: string;

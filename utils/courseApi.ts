@@ -5,6 +5,7 @@ import {
   CreateCourseAssessmentPayload,
   CreateCoursePayload,
   StudentAssessmentRecord,
+  UpdateCourseAttendancePayload,
 } from "@/types/course";
 import { ApiResponse } from "@/types/user";
 
@@ -214,6 +215,13 @@ export const courseApi = {
         : (responseData as Partial<CourseAssessment> & Record<string, unknown>);
 
     return normalizeAssessment(assessmentPayload);
+  },
+
+  async updateCourseAttendance(
+    courseId: string,
+    payload: UpdateCourseAttendancePayload,
+  ): Promise<void> {
+    await api.patch(`/courses/${courseId}/attendance`, payload);
   },
 
   async deleteCourseAssessment(
